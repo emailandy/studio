@@ -16,18 +16,20 @@ export function PlaceRating({ rating, userRatingCount }: PlaceRatingProps) {
   const stars = Array.from({ length: 5 }, (_, i) => i + 1);
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="font-bold text-lg text-gray-800">{roundedRating}</span>
-      <div className="flex">
+    <div className="flex items-center gap-1">
+      <span className="font-bold text-xs text-gray-800">{roundedRating}</span>
+      <div className="flex items-center">
         {stars.map((star) => (
           <Star
             key={star}
-            className={cn(
-              'h-5 w-5',
+            size={12}
+            className={`h-4 w-4 ${
               roundedRating >= star
-                ? 'text-yellow-400 fill-yellow-400'
-                : 'text-gray-300'
-            )}
+                ? "text-yellow-400 fill-yellow-400"
+                : roundedRating >= star - 0.5
+                ? "text-yellow-400 fill-yellow-400 opacity-50"
+                : "text-gray-300 fill-gray-300"
+            }`}
           />
         ))}
       </div>

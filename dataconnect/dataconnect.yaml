@@ -1,0 +1,11 @@
+specVersion: "v1alpha"
+serviceId: "bcomtravel-service"
+location: "us-east4"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "bcomtravel-database"
+      cloudSql:
+        instanceId: "bcomtravel-instance"
+connectorDirs: ["./example"]

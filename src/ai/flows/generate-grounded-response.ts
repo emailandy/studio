@@ -48,9 +48,12 @@ const generateGroundedResponseFlow = ai.defineFlow(
     // Step 1: Get the initial grounded response from Gemini.
     // This provides a conversational answer based on Google Search.
     const llmResponse = await ai.generate({
-      model: 'googleai/gemini-2.5-flash-lite',
+      model: 'googleai/gemini-3.1-flash-lite',
       prompt: input.query,
       config: {
+        thinkingConfig: {
+          thinkingLevel: 'LOW',
+        },
         tools: [{ google_search: {} }],
       },
     });
@@ -63,7 +66,12 @@ const generateGroundedResponseFlow = ai.defineFlow(
     // Step 2: Use another LLM call to parse the text into structured JSON.
     // This is more reliable than trying to parse unstructured text manually.
     const parsedResponse = await ai.generate({
-      model: 'googleai/gemini-2.5-flash-lite',
+      model: 'googleai/gemini-3.1-flash-lite',
+      config: {
+        thinkingConfig: {
+          thinkingLevel: 'LOW',
+        },
+      },
       prompt: `Parse the following text and extract all the mentioned points of interest (like businesses, landmarks, restaurants, etc.). For each point of interest, provide its name and a brief description.
 
         Text to parse:

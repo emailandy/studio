@@ -3,8 +3,8 @@
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { LiveSession, Part } from '@google/genai';
-import type { ItineraryData } from '@/app/page';
+import type { Session as LiveSession, Part } from '@google/genai/web';
+import type { ItineraryData, MapData } from '@/app/page';
 
 interface LiveState {
   // Session and connection state
@@ -24,6 +24,8 @@ interface LiveState {
   // Tour-specific state
   itineraryData: ItineraryData | null;
   tourIndex: number;
+  mapData: MapData | null;
+  activeDay: number;
 }
 
 interface LiveActions {
@@ -45,6 +47,8 @@ interface LiveActions {
   // Tour actions
   startTour: (itineraryData: ItineraryData) => void;
   setTourIndex: (index: number) => void;
+  setMapData: (mapData: MapData | null) => void;
+  setActiveDay: (day: number) => void;
   
   // Lifecycle actions
   reset: () => void;
@@ -63,6 +67,8 @@ const initialState: LiveState = {
   cameraActive: true,
   itineraryData: null,
   tourIndex: -1,
+  mapData: null,
+  activeDay: 0,
 };
 
 export const useLiveStore = create<LiveState & LiveActions>()(
@@ -84,6 +90,8 @@ export const useLiveStore = create<LiveState & LiveActions>()(
     
     startTour: (itineraryData) => set({ itineraryData, tourIndex: 0, text: '' }),
     setTourIndex: (index) => set({ tourIndex: index }),
+    setMapData: (mapData) => set({ mapData }),
+    setActiveDay: (activeDay) => set({ activeDay }),
 
     reset: () => {
       set((state) => {

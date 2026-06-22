@@ -1,0 +1,13 @@
+src/ai/flows/generate-itinerary.ts(99,90): error TS1005: ',' expected.
+src/ai/flows/generate-itinerary.ts(99,109): error TS1005: ',' expected.
+src/ai/flows/generate-itinerary.ts(100,2): error TS1005: ',' expected.
+src/ai/flows/generate-itinerary.ts(101,13): error TS1135: Argument expression expected.
+src/ai/flows/generate-itinerary.ts(101,14): error TS1128: Declaration or statement expected.
+src/ai/flows/generate-itinerary.ts(102,9): error TS1128: Declaration or statement expected.
+src/ai/flows/generate-itinerary.ts(102,10): error TS1128: Declaration or statement expected.
+src/ai/flows/generate-itinerary.ts(102,11): error TS1128: Declaration or statement expected.
+src/ai/flows/generate-itinerary.ts(102,12): error TS1128: Declaration or statement expected.
+src/ai/flows/generate-itinerary.ts(107,5): error TS1128: Declaration or statement expected.
+src/ai/flows/generate-itinerary.ts(107,7): error TS1005: 'try' expected.
+src/ai/flows/generate-itinerary.ts(171,3): error TS1128: Declaration or statement expected.
+src/ai/flows/generate-itinerary.ts(172,1): error TS1128: Declaration or statement expected.

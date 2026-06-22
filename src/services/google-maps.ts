@@ -6,7 +6,10 @@ import { z } from "zod";
 const mapsClient = new Client({});
 
 const findPlaceToolSchema = z.object({
-  query: z.string(),
+  query: z.string().describe('The name or search query of the place.'),
+  lat: z.number().optional().describe('Latitude for location biasing.'),
+  lng: z.number().optional().describe('Longitude for location biasing.'),
+  placeId: z.string().optional().describe('The direct Google Places ID of the place if you already know it.'),
 });
 
 export const findPlaceTool = ai.defineTool(
@@ -20,30 +23,41 @@ export const findPlaceTool = ai.defineTool(
         rating: z.number().nullable().optional(),
         userRatingCount: z.number().nullable().optional(),
         reviews: z.array(z.string()).optional(),
+        placeId: z.string().optional(),
       }),
     },
     async (input) => {
       const { query } = input;
   
       try {
-        const findPlaceResponse = await mapsClient.findPlaceFromText({
-          params: {
-            input: query,
-            inputtype: PlaceInputType.textQuery,
-            fields: ['place_id'],
+        let candidatePlaceId = input.placeId;
+
+        if (!candidatePlaceId) {
+          const textSearchParams: any = {
+            query: query,
             key: process.env.GOOGLE_MAPS_API_KEY!,
-          },
-        });
-  
-        const candidate = findPlaceResponse.data.candidates?.[0];
-  
-        if (!candidate || !candidate.place_id) {
-          throw new Error(`No place found for query: "${query}"`);
+          };
+
+          if (input.lat && input.lng) {
+            textSearchParams.location = { lat: input.lat, lng: input.lng };
+            textSearchParams.radius = 8046; // 5 miles in meters
+          }
+
+          const response = await mapsClient.textSearch({
+            params: textSearchParams,
+          });
+
+          const candidate = response.data.results?.[0];
+
+          if (!candidate || !candidate.place_id) {
+            throw new Error(`No place found for query: "${query}"`);
+          }
+          candidatePlaceId = candidate.place_id;
         }
 
         const detailsResponse = await mapsClient.placeDetails({
             params: {
-                place_id: candidate.place_id,
+                place_id: candidatePlaceId,
                 fields: ['formatted_address', 'name', 'photos', 'rating', 'user_ratings_total', 'reviews'],
                 key: process.env.GOOGLE_MAPS_API_KEY!,
             }
@@ -58,7 +72,7 @@ export const findPlaceTool = ai.defineTool(
         let imageUrl = null;
         if (placeDetails.photos && placeDetails.photos.length > 0) {
           const photoReference = placeDetails.photos[0].photo_reference;
-          imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${process.env.GOOGLE_MAPS_API_KEY!}`;
+          imageUrl = `/api/place-photo?photo_reference=${photoReference}`;
         }
 
         const reviews = placeDetails.reviews?.map(r => r.text).slice(0, 3) || []; // Get up to 3 reviews
@@ -69,6 +83,7 @@ export const findPlaceTool = ai.defineTool(
           rating: placeDetails.rating ?? null,
           userRatingCount: placeDetails.user_ratings_total ?? null,
           reviews: reviews,
+          placeId: candidatePlaceId,
         };
       } catch (error) {
         console.error(`Google Maps API error for query "${query}":`, error);
@@ -115,6 +130,7 @@ export const findPlaceTool = ai.defineTool(
     name: z.string(),
     address: z.string(),
     imageUrl: z.string().nullable(),
+    placeId: z.string().optional(),
   });
 
   export const findNearbyPlacesTool = ai.defineTool({
@@ -136,18 +152,21 @@ export const findPlaceTool = ai.defineTool(
             key: process.env.GOOGLE_MAPS_API_KEY!,
         }
     };
+    console.log(`[findNearbyPlacesTool] Request params:`, JSON.stringify(request.params));
     try {
         const response = await mapsClient.placesNearby(request);
+        console.log(`[findNearbyPlacesTool] Response status: ${response.data.status}, Results count: ${response.data.results?.length || 0}`);
         const places = response.data.results.slice(0, 6).map((place: Place) => {
           let imageUrl = null;
           if (place.photos && place.photos.length > 0) {
             const photoReference = place.photos[0].photo_reference;
-            imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${process.env.GOOGLE_MAPS_API_KEY!}`;
+            imageUrl = `/api/place-photo?photo_reference=${photoReference}`;
           }
           return {
             name: place.name || 'Unknown Place',
             address: place.vicinity || 'Address not available',
             imageUrl,
+            placeId: place.place_id,
           };
         });
         return places;
@@ -169,7 +188,7 @@ export const findPlaceTool = ai.defineTool(
       const request: TextSearchRequest = {
         params: {
           query: input.query,
-          type: 'lodging',
+          type: 'lodging' as any,
           key: process.env.GOOGLE_MAPS_API_KEY!,
         },
       };
@@ -180,12 +199,13 @@ export const findPlaceTool = ai.defineTool(
           let imageUrl = null;
           if (place.photos && place.photos.length > 0) {
             const photoReference = place.photos[0].photo_reference;
-            imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${process.env.GOOGLE_MAPS_API_KEY!}`;
+            imageUrl = `/api/place-photo?photo_reference=${photoReference}`;
           }
           return {
             name: place.name || 'Unknown Hotel',
             address: place.formatted_address || 'Address not available',
             imageUrl,
+            placeId: place.place_id,
           };
         });
         return hotels;
@@ -195,3 +215,4 @@ export const findPlaceTool = ai.defineTool(
       }
     }
   );
+

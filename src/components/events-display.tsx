@@ -1,3 +1,6 @@
+"use client";
+
+import * as React from "react";
 import type { FindTrendyEventsOutput } from "@/ai/schemas/event-schema";
 import {
   Card,
@@ -13,9 +16,45 @@ import { Separator } from "./ui/separator";
 
 interface EventsDisplayProps {
   data: FindTrendyEventsOutput;
+  onAddLocationToItinerary?: (dayIndex: number, location: any) => void;
 }
 
-export function EventsDisplay({ data }: EventsDisplayProps) {
+export function EventsDisplay({ data, onAddLocationToItinerary }: EventsDisplayProps) {
+  const [addedEvents, setAddedEvents] = React.useState<Set<number>>(new Set());
+  const [addedTours, setAddedTours] = React.useState<Set<number>>(new Set());
+
+  const handleAddEvent = (dayIndex: number, event: any, index: number) => {
+    if (onAddLocationToItinerary) {
+      onAddLocationToItinerary(dayIndex, {
+        name: event.name,
+        description: event.description || "",
+        address: event.location || "Address not available",
+        imageUrl: null,
+      });
+      setAddedEvents(prev => {
+        const next = new Set(prev);
+        next.add(index);
+        return next;
+      });
+    }
+  };
+
+  const handleAddTour = (dayIndex: number, tour: any, index: number) => {
+    if (onAddLocationToItinerary) {
+      onAddLocationToItinerary(dayIndex, {
+        name: tour.title,
+        description: tour.description || "",
+        address: tour.location || "Address not available",
+        imageUrl: null,
+      });
+      setAddedTours(prev => {
+        const next = new Set(prev);
+        next.add(index);
+        return next;
+      });
+    }
+  };
+
   return (
     <div className="space-y-12 animate-in fade-in duration-500">
       
@@ -45,6 +84,22 @@ export function EventsDisplay({ data }: EventsDisplayProps) {
                         </div>
                     </CardContent>
                     </div>
+                    <CardFooter className="flex flex-col gap-2 pt-0">
+                      <Separator className="mb-2" />
+                      <p className="text-xs text-muted-foreground self-start">Add to Itinerary:</p>
+                      <div className="flex gap-2 w-full">
+                        <Button size="sm" variant="outline" className="flex-grow" onClick={() => handleAddEvent(0, event, index)} disabled={addedEvents.has(index)}>
+                          Day 1
+                        </Button>
+                        <Button size="sm" variant="outline" className="flex-grow" onClick={() => handleAddEvent(1, event, index)} disabled={addedEvents.has(index)}>
+                          Day 2
+                        </Button>
+                        <Button size="sm" variant="outline" className="flex-grow" onClick={() => handleAddEvent(2, event, index)} disabled={addedEvents.has(index)}>
+                          Day 3
+                        </Button>
+                      </div>
+                      {addedEvents.has(index) && <span className="text-xs text-green-600 flex items-center gap-1 self-start"><CheckCircle className="h-4 w-4" /> Added to Trip!</span>}
+                    </CardFooter>
                 </Card>
                 ))}
             </div>
@@ -80,11 +135,21 @@ export function EventsDisplay({ data }: EventsDisplayProps) {
                     <div className="flex items-center gap-2 text-sm pt-2"><CalendarDays className="h-4 w-4 text-gray-500" /><span>{tour.availability}</span></div>
                   </CardContent>
                 </div>
-                <CardFooter>
-                    <Button variant="default" className="w-full">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Add to Itinerary
+                <CardFooter className="flex flex-col gap-2">
+                  <Separator className="mb-2" />
+                  <p className="text-xs text-muted-foreground self-start">Add to Itinerary:</p>
+                  <div className="flex gap-2 w-full">
+                    <Button size="sm" variant="outline" className="flex-grow" onClick={() => handleAddTour(0, tour, index)} disabled={addedTours.has(index)}>
+                      Day 1
                     </Button>
+                    <Button size="sm" variant="outline" className="flex-grow" onClick={() => handleAddTour(1, tour, index)} disabled={addedTours.has(index)}>
+                      Day 2
+                    </Button>
+                    <Button size="sm" variant="outline" className="flex-grow" onClick={() => handleAddTour(2, tour, index)} disabled={addedTours.has(index)}>
+                      Day 3
+                    </Button>
+                  </div>
+                  {addedTours.has(index) && <span className="text-xs text-green-600 flex items-center gap-1 self-start"><CheckCircle className="h-4 w-4" /> Added to Trip!</span>}
                 </CardFooter>
               </Card>
             ))}

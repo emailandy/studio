@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cesium Google 3D Tiles Test</title>
+    <!-- Include CesiumJS -->
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        html, body, #cesiumContainer {
+            width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer"></div>
+    <script>
+        // Provide Google API Key
+        const googleApiKey = "REPLACE_WITH_KEY"; // I will inject the key via script or template
+        
+        async function init() {
+            try {
+                // Setup viewer
+                const viewer = new Cesium.Viewer("cesiumContainer", {
+                    globe: false,
+                    animation: false,
+                    timeline: false,
+                    baseLayerPicker: false
+                });
+
+                console.log("Viewer created");
+
+                // Set Google API key for Cesium global or tileset options
+                // Wait, does Cesium.createGooglePhotorealistic3DTileset accept key?
+                // According to Cesium docs, to load directly from url:
+                
+                const tileset = await Cesium.createGooglePhotorealistic3DTileset();
+                
+                viewer.scene.primitives.add(tileset);
+                console.log("Tileset added");
+                
+                viewer.zoomTo(tileset);
+                console.log("Zoom complete");
+
+            } catch (error) {
+                console.error("Cesium Crash:", error);
+            }
+        }
+        
+        init();
+    </script>
+</body>
+</html>

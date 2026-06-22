@@ -8,12 +8,15 @@ import {
 } from '@/components/ui/card';
 import { Building, MapPin } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
+
 
 interface ResultsDisplayProps {
   data: GenerateGroundedResponseOutput;
+  query: string;
 }
 
-export function ResultsDisplay({ data }: ResultsDisplayProps) {
+export function ResultsDisplay({ data, query }: ResultsDisplayProps) {
   const { pointsOfInterest } = data;
 
   return (
@@ -32,16 +35,18 @@ export function ResultsDisplay({ data }: ResultsDisplayProps) {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {pointsOfInterest.map((poi, index) => (
-              <Card
-                key={index}
-                className="shadow-lg overflow-hidden flex flex-col"
-              >
+              <Link href={`/hotel?name=${encodeURIComponent(poi.name)}&address=${encodeURIComponent(poi.address)}&query=${encodeURIComponent(query)}`} key={index} className="flex h-full" target="_blank">
+                <Card
+                  className="shadow-lg overflow-hidden flex flex-col flex-grow hover:shadow-xl transition-shadow cursor-pointer"
+                >
+
                 <div className="relative w-full h-48">
                   {poi.imageUrl ? (
                     <Image
                       src={poi.imageUrl}
                       alt={`Photo of ${poi.name}`}
                       fill
+                      unoptimized
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       data-ai-hint="tourist location"
@@ -66,9 +71,11 @@ export function ResultsDisplay({ data }: ResultsDisplayProps) {
                     <span>{poi.address}</span>
                   </p>
                 </CardContent>
-              </Card>
+                </Card>
+              </Link>
             ))}
           </div>
+
         </div>
       )}
     </div>

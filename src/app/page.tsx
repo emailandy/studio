@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Image from "next/image";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -29,19 +30,21 @@ import {
   generateGroundedResponse,
 } from "@/ai/flows/generate-grounded-response";
 import {
-  searchYoutubeVideos,
-} from "@/ai/flows/search-youtube-videos";
+  generateMapsGroundedResponse
+} from "@/ai/flows/generate-maps-grounded-response";
 import { generateItinerary } from "@/ai/flows/generate-itinerary";
 import { generateItineraryBanner } from "@/ai/flows/generate-itinerary-banner";
-import type { GenerateGroundedResponseOutput, PointOfInterest } from "@/ai/schemas/grounded-response-schema";
+import { searchYoutubeVideos } from "@/ai/flows/search-youtube-videos";
+import { VideoResultDisplay } from "@/components/video-result-display";
 import type { SearchYoutubeVideosOutput } from "@/ai/schemas/youtube-videos-schema";
+import type { GenerateGroundedResponseOutput, PointOfInterest } from "@/ai/schemas/grounded-response-schema";
 import type { GenerateItineraryOutput } from "@/ai/schemas/itinerary-schema";
 import type { GenerateItineraryInput } from "@/ai/schemas/itinerary-schema";
 import { ResultsDisplay } from "@/components/results-display";
 import { LoadingState } from "@/components/loading-state";
-import { Search, Youtube, Sparkles, Loader, Plane } from "lucide-react";
+import { Search, Youtube, Sparkles, Loader, Plane, Map, Heart } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { VideoResultDisplay } from "@/components/video-result-display";
+
 import { ItineraryDisplay } from "@/components/itinerary-display";
 import MapDisplay from "@/components/map-display";
 import type { Video } from "@/lib/types";
@@ -50,10 +53,13 @@ import type { FindHotelsOutput, Hotel } from "@/ai/schemas/hotel-schema";
 import { HotelDisplay } from "@/components/hotel-display";
 import { findTrendyEvents } from "@/ai/flows/find-trendy-events";
 import type { FindTrendyEventsOutput } from "@/ai/schemas/event-schema";
-import type { GetWeatherOutput } from "@/ai/schemas/weather-schema";
 import { EventsDisplay } from "@/components/events-display";
+import { calculateDistancesAction } from "@/actions/maps";
 import { useLiveStore } from "@/store/live-store";
 import Link from "next/link";
+import { auth, db, storage } from "@/lib/firebase";
+import { collection, doc, setDoc, getDoc } from "firebase/firestore";
+import { ref, uploadString, getDownloadURL } from "firebase/storage";
 
 
 const groundedSearchSchema = z.object({
@@ -62,13 +68,28 @@ const groundedSearchSchema = z.object({
   }),
 });
 
+const mapsGroundedSearchSchema = z.object({
+  query: z.string().min(2, {
+    message: "Query must be at least 2 characters.",
+  }),
+  location: z.string().optional(),
+});
+
+
 const videoSearchSchema = z.object({
-  destination: z.string().min(2, {
-    message: "Destination must be at least 2 characters.",
+  youtubeUrl: z.string().min(1, {
+    message: "Please enter a valid YouTube video URL.",
   }),
-  travelType: z.string().min(1, {
-    message: "Please select a travel style.",
+});
+
+const youtubeVideoSearchSchema = z.object({
+  destination: z.string().min(1, {
+    message: "Please enter a destination.",
   }),
+  travelStyle: z.string().min(1, {
+    message: "Please enter a travel style.",
+  }),
+  budget: z.string().optional(),
 });
 
 export interface ItineraryData {
@@ -79,8 +100,6 @@ export interface ItineraryData {
   bannerUrl?: string;
   isBannerLoading: boolean;
   bannerAiHint?: string;
-  weather?: GetWeatherOutput | null;
-  isWeatherLoading: boolean;
 }
 
 export type MapData = {
@@ -92,35 +111,144 @@ export type MapData = {
   place: PointOfInterest | null;
 };
 
-const travelStyles = [
-  "Foodie",
-  "Adventure Seeker",
-  "Relaxation",
-  "Cultural",
-  "Budget",
-  "Luxury",
-  "Family Friendly",
-  "Backpacking",
-];
-
 export default function Home() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tripId = searchParams.get('tripId');
+
   const [groundedResponse, setGroundedResponse] =
     useState<GenerateGroundedResponseOutput | null>(null);
-  const [videoResponse, setVideoResponse] =
-    useState<SearchYoutubeVideosOutput | null>(null);
   const [itineraryResponse, setItineraryResponse] = 
     useState<ItineraryData | null>(null);
+
+  useEffect(() => {
+    async function loadSavedTrip() {
+      if (tripId) {
+        setIsItineraryLoading(true);
+        try {
+          const docSnap = await getDoc(doc(db, "trips", tripId));
+          if (docSnap.exists()) {
+            const tripData = docSnap.data();
+            console.log("[HomePage] Loaded from Firestore:", tripData);
+            const parsedMapData = JSON.parse(tripData.mapData);
+            setMapData(parsedMapData);
+            setItineraryResponse({
+              video: {
+                id: tripData.videoId || '',
+                url: '',
+                title: tripData.name,
+                thumbnail: tripData.thumbnail || '',
+                description: '',
+              },
+              itinerary: JSON.parse(tripData.itinerary),
+              videoSummary: '',
+              destination: parsedMapData?.location?.name || tripData.name,
+              bannerUrl: tripData.bannerUrl,
+              isBannerLoading: false,
+            });
+            setActiveTab("video");
+          }
+        } catch (e) {
+          console.error("Failed to load trip from Firestore", e);
+        }
+        setIsItineraryLoading(false);
+      }
+    }
+    loadSavedTrip();
+  }, [tripId]);
+  const [youtubeVideoSearchResults, setYoutubeVideoSearchResults] = useState<SearchYoutubeVideosOutput | null>(null);
   const [hotelResponse, setHotelResponse] = useState<FindHotelsOutput | null>(null);
   const [eventsResponse, setEventsResponse] = useState<FindTrendyEventsOutput | null>(null);
-  const [weatherResponse, setWeatherResponse] = useState<GetWeatherOutput | null>(null);
   const [mapData, setMapData] = useState<MapData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isItineraryLoading, setIsItineraryLoading] = useState(false);
   const [isHotelLoading, setIsHotelLoading] = useState(false);
   const [isEventsLoading, setIsEventsLoading] = useState(false);
-  const [isWeatherLoading, setIsWeatherLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("search");
+  const [selectedTravelStyle, setSelectedTravelStyle] = useState<string>("Standard");
+  const [lastSearchedDestination, setLastSearchedDestination] = useState<string>("");
   const { toast } = useToast();
+
+
+  const handleBookNow = () => {
+    if (itineraryResponse) {
+      localStorage.setItem('activeItinerary', JSON.stringify(itineraryResponse.itinerary));
+      if (itineraryResponse.videoId) {
+        localStorage.setItem('videoId', itineraryResponse.videoId);
+      }
+    }
+    if (mapData) {
+      localStorage.setItem('mapData', JSON.stringify(mapData));
+    }
+    router.push('/booking');
+  };
+
+  const handleSaveDraft = async () => {
+    if (!itineraryResponse) return;
+    
+    const newTrip = {
+      id: Date.now().toString(),
+      name: lastSearchedDestination ? `Draft Trip to ${lastSearchedDestination}` : "Draft Travel Discovery",
+      itinerary: itineraryResponse.itinerary,
+      mapData: mapData || undefined,
+      savedAt: new Date().toLocaleString(),
+      videoId: itineraryResponse.videoId || ''
+    };
+
+    const user = auth.currentUser;
+    if (user) {
+      try {
+        let finalBannerUrl = itineraryResponse.bannerUrl;
+        if (itineraryResponse.bannerUrl && itineraryResponse.bannerUrl.startsWith('data:')) {
+          try {
+            const storageRef = ref(storage, `trips/${newTrip.id}/banner.png`);
+            await uploadString(storageRef, itineraryResponse.bannerUrl, 'data_url');
+            finalBannerUrl = await getDownloadURL(storageRef);
+            console.log("Banner uploaded to Storage:", finalBannerUrl);
+          } catch (storageErr) {
+            console.error("Failed to upload banner to Storage:", storageErr);
+          }
+        }
+
+        await setDoc(doc(db, "trips", newTrip.id), {
+          id: newTrip.id,
+          userId: user.uid,
+          name: newTrip.name,
+          itinerary: JSON.stringify(newTrip.itinerary),
+          mapData: JSON.stringify(newTrip.mapData),
+          savedAt: newTrip.savedAt,
+          videoId: newTrip.videoId,
+          bannerUrl: finalBannerUrl,
+          thumbnail: itineraryResponse.video.thumbnail || ''
+        });
+
+        toast({
+            title: "Trip Saved to Cloud",
+            description: "Access via Find My Trip dashboard.",
+        });
+      } catch (e) {
+        console.error("Failed to save trip to Data Connect", e);
+        toast({
+            variant: "destructive",
+            title: "Cloud Save Failed",
+            description: "Saved locally instead.",
+        });
+        const savedStr = localStorage.getItem('savedTrips') || '[]';
+        const savedList = JSON.parse(savedStr);
+        savedList.push(newTrip);
+        localStorage.setItem('savedTrips', JSON.stringify(savedList));
+      }
+    } else {
+      const savedStr = localStorage.getItem('savedTrips') || '[]';
+      const savedList = JSON.parse(savedStr);
+      savedList.push(newTrip);
+      localStorage.setItem('savedTrips', JSON.stringify(savedList));
+      toast({
+          title: "Draft Saved Locally",
+          description: "Sign in to sync with cloud.",
+      });
+    }
+  };
 
   const groundedSearchForm = useForm<z.infer<typeof groundedSearchSchema>>({
     resolver: zodResolver(groundedSearchSchema),
@@ -129,11 +257,27 @@ export default function Home() {
     },
   });
 
+  const mapsGroundedSearchForm = useForm<z.infer<typeof mapsGroundedSearchSchema>>({
+    resolver: zodResolver(mapsGroundedSearchSchema),
+    defaultValues: {
+      query: "",
+      location: "",
+    },
+  });
+
   const videoSearchForm = useForm<z.infer<typeof videoSearchSchema>>({
     resolver: zodResolver(videoSearchSchema),
     defaultValues: {
+      youtubeUrl: "",
+    },
+  });
+
+  const youtubeVideoSearchForm = useForm<z.infer<typeof youtubeVideoSearchSchema>>({
+    resolver: zodResolver(youtubeVideoSearchSchema),
+    defaultValues: {
       destination: "",
-      travelType: "",
+      travelStyle: "Foodie",
+      budget: "",
     },
   });
 
@@ -146,7 +290,7 @@ export default function Home() {
       if (tourIndex < allLocations.length) {
         const currentLocation = allLocations[tourIndex];
         if (currentLocation.address && currentLocation.address !== "Address not available") {
-            handleMapLocationSelect(currentLocation);
+            handleMapLocationSelect(currentLocation as any);
         }
       }
     }
@@ -158,11 +302,9 @@ export default function Home() {
   ) {
     setIsLoading(true);
     setGroundedResponse(null);
-    setVideoResponse(null);
     setItineraryResponse(null);
     setHotelResponse(null);
     setEventsResponse(null);
-    setWeatherResponse(null);
     setMapData(null);
     try {
       const result = await generateGroundedResponse({ query: values.query });
@@ -179,34 +321,6 @@ export default function Home() {
     }
   }
 
-  async function onVideoSearchSubmit(values: z.infer<typeof videoSearchSchema>) {
-    setIsLoading(true);
-    setGroundedResponse(null);
-    setVideoResponse(null);
-    setItineraryResponse(null);
-    setHotelResponse(null);
-    setEventsResponse(null);
-    setWeatherResponse(null);
-    setMapData(null);
-    try {
-      const videoResult = await searchYoutubeVideos({
-          destination: values.destination,
-          travelType: values.travelType,
-        });
-      setVideoResponse(videoResult);
-    } catch (error) {
-      console.error(error);
-      toast({
-        variant: "destructive",
-        title: "An error occurred",
-        description:
-          "Failed to find videos. Please check your query and try again.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }
-  
   const geocodeAddress = (address: string): Promise<google.maps.LatLngLiteral> => {
     return new Promise((resolve, reject) => {
         if (!window.google || !window.google.maps) {
@@ -223,18 +337,263 @@ export default function Home() {
         });
     });
   };
-  
-  const handleMapLocationSelect = async (place: PointOfInterest) => {
-    if (!place.address || place.address === "Address not available") {
+
+  async function onMapsGroundedSearchSubmit(
+    values: z.infer<typeof mapsGroundedSearchSchema>
+  ) {
+    setIsLoading(true);
+    setGroundedResponse(null);
+    setItineraryResponse(null);
+    setHotelResponse(null);
+    setEventsResponse(null);
+    setMapData(null);
+    try {
+      let locationCoords: { latitude: number; longitude: number; } | undefined = undefined;
+      if (values.location) {
+        try {
+          const geocoded = await geocodeAddress(values.location);
+          locationCoords = { latitude: geocoded.lat, longitude: geocoded.lng };
+        } catch (e) {
+          console.warn("Could not geocode location, proceeding without it.", e);
+          toast({
+            variant: "default",
+            title: "Location Not Found",
+            description: `Could not find "${values.location}" on the map. Performing a general search instead.`,
+          });
+        }
+      }
+
+      const result = await generateMapsGroundedResponse({ query: values.query, location: locationCoords });
+      setGroundedResponse(result);
+
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "An error occurred",
+        description: "Failed to get a response from Gemini Maps. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+
+  async function onVideoSearchSubmit(values: z.infer<typeof videoSearchSchema>) {
+    if (values.youtubeUrl) {
+      const match = values.youtubeUrl.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+      const videoId = match ? match[1] : null;
+      if (!videoId) {
         toast({
-            variant: "destructive",
-            title: "Location Not Available",
-            description: "This location does not have a valid address to display on the map.",
+          variant: "destructive",
+          title: "Invalid URL",
+          description: "Please enter a valid YouTube video URL.",
         });
         return;
+      }
+      setYoutubeVideoSearchResults(null); // Clear search results if using direct link
+      handleGenerateItinerary({ id: videoId, title: "Direct Link Video", description: "", thumbnail: "", url: values.youtubeUrl });
     }
+  }
+
+  async function onYoutubeVideoSearchSubmit(values: z.infer<typeof youtubeVideoSearchSchema>) {
+    if (values.travelStyle) {
+      setSelectedTravelStyle(values.travelStyle);
+    }
+    setLastSearchedDestination(values.destination);
+    setIsLoading(true);
+    setYoutubeVideoSearchResults(null);
+    setItineraryResponse(null);
     try {
-        const coords = await geocodeAddress(place.address);
+      const result = await searchYoutubeVideos({
+        destination: values.destination,
+        travelType: values.travelStyle,
+        budget: values.budget,
+      });
+      setYoutubeVideoSearchResults(result);
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Search Failed",
+        description: "Failed to find relevant videos on YouTube. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleFeelingLuckySubmit() {
+    const values = youtubeVideoSearchForm.getValues();
+    if (!values.destination || !values.travelStyle || !values.budget) {
+      toast({
+        variant: "destructive",
+        title: "Missing Information",
+        description: "Budget is required for Feeling Lucky! Please fill all fields.",
+      });
+      return;
+    }
+    
+    setLastSearchedDestination(values.destination);
+    setIsLoading(true);
+    setYoutubeVideoSearchResults(null);
+    setItineraryResponse(null);
+    
+    try {
+      const result = await searchYoutubeVideos({
+        destination: values.destination,
+        travelType: values.travelStyle,
+        budget: values.budget,
+      });
+      
+      if (!result.videos || result.videos.length === 0) {
+        throw new Error("No videos found.");
+      }
+      
+      const randomIndex = Math.floor(Math.random() * result.videos.length);
+      const randomVideo = result.videos[randomIndex];
+      
+      setSelectedTravelStyle(values.travelStyle);
+      const genResult = await handleGenerateItinerary(randomVideo, values.budget);
+      
+      if (genResult && genResult.lat && genResult.lng) {
+        let activeItinerary = [...genResult.itineraryData.itinerary];
+        let hotelAddress: string | undefined;
+
+        // Automatically find a hotel!
+        try {
+          const hotelResult = await findHotels({ latitude: genResult.lat, longitude: genResult.lng });
+          if (hotelResult.hotels && hotelResult.hotels.length > 0) {
+            const firstHotel = hotelResult.hotels[0];
+            hotelAddress = firstHotel.address;
+            if (activeItinerary.length > 0) {
+              activeItinerary[0] = {
+                ...activeItinerary[0],
+                locations: [
+                  {
+                    name: `Check-in: ${firstHotel.name}`,
+                    description: firstHotel.description,
+                    address: firstHotel.address,
+                    imageUrl: firstHotel.imageUrl,
+                    type: "hotel",
+                  },
+                  ...activeItinerary[0].locations,
+                ],
+              };
+            }
+          }
+        } catch (hotelError) {
+          console.error("Feeling lucky hotel find failed:", hotelError);
+        }
+
+        // Automatically find events!
+        try {
+          const eventResult = await findTrendyEvents({ destination: values.destination, travelStyle: values.travelStyle });
+          if (eventResult.events && eventResult.events.length > 0) {
+            for (let i = 0; i < Math.min(activeItinerary.length, eventResult.events.length); i++) {
+              const event = eventResult.events[i];
+              activeItinerary[i] = {
+                ...activeItinerary[i],
+                locations: [
+                  ...activeItinerary[i].locations,
+                  {
+                    name: `Event: ${event.name}`,
+                    description: event.description,
+                    address: event.location || "Local Event",
+                    imageUrl: null,
+                  }
+                ],
+              };
+            }
+          }
+        } catch (eventError) {
+          console.error("Feeling lucky event find failed:", eventError);
+        }
+
+        // Recalculate Distances!
+        if (hotelAddress) {
+          try {
+            const destinations: Array<{ address: string }> = [];
+            const mapping: Array<{ dayIndex: number, locIndex: number }> = [];
+
+            activeItinerary.forEach((day, dayIndex) => {
+              day.locations.forEach((loc, locIndex) => {
+                if (dayIndex === 0 && locIndex === 0) return; // Skip hotel itself
+                if (loc.address && loc.address !== "Address not available" && loc.address !== "Local Event") {
+                  destinations.push({ address: loc.address });
+                  mapping.push({ dayIndex, locIndex });
+                }
+              });
+            });
+
+            if (destinations.length > 0) {
+              const matrixResult = await calculateDistancesAction(
+                [{ address: hotelAddress }],
+                destinations
+              );
+
+              matrixResult.forEach((item: any) => {
+                const map = mapping[item.destinationIndex];
+                if (map) {
+                  const distanceKm = item.distanceMeters ? (item.distanceMeters / 1000).toFixed(1) : undefined;
+                  const durationSecs = item.durationText ? parseInt(item.durationText.replace('s', '')) : 0;
+                  const durationMins = Math.round(durationSecs / 60);
+                  activeItinerary[map.dayIndex].locations[map.locIndex] = {
+                    ...activeItinerary[map.dayIndex].locations[map.locIndex],
+                    distanceText: distanceKm ? `${distanceKm} km` : undefined,
+                    durationText: durationMins > 0 ? `${durationMins} mins` : undefined,
+                    distanceMeters: item.distanceMeters,
+                  };
+                }
+              });
+
+              // Sort daily locations by distance to hotel
+              activeItinerary.forEach((day, dayIndex) => {
+                 const locations = [...day.locations];
+                 if (dayIndex === 0 && locations[0] && (locations[0] as any).type === "hotel") {
+                    const hotel = locations[0];
+                    const rest = locations.slice(1);
+                    rest.sort((a, b) => ((a as any).distanceMeters ?? Infinity) - ((b as any).distanceMeters ?? Infinity));
+                    day.locations = [hotel, ...rest];
+                 } else {
+                    locations.sort((a, b) => ((a as any).distanceMeters ?? Infinity) - ((b as any).distanceMeters ?? Infinity));
+                    day.locations = locations;
+                 }
+              });
+            }
+          } catch (matrixError) {
+            console.error("Feeling lucky matrix failed:", matrixError);
+          }
+        }
+
+        // Set final state!
+        setItineraryResponse(prev => {
+          if (!prev) return null;
+          return { ...prev, itinerary: activeItinerary };
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Feeling Lucky Failed",
+        description: "Failed to find relevant videos or random video selection failed.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  
+  const handleMapLocationSelect = async (place: PointOfInterest) => {
+    let targetAddress = place.address;
+    
+    if (!targetAddress || targetAddress === "Address not available") {
+       targetAddress = place.name;
+       console.log("handleMapLocationSelect (page): Fallback Name geocoding setup:", targetAddress);
+    }
+
+    try {
+        const coords = await geocodeAddress(targetAddress);
         setMapData({
             location: {
                 name: place.name,
@@ -254,48 +613,38 @@ export default function Home() {
   }
 
 
-  const handleGenerateItinerary = async (video: Video) => {
-    const videoSearchValues = videoSearchForm.getValues();
-    if (!videoSearchValues.destination || !videoSearchValues.travelType) {
-      toast({
-        variant: "destructive",
-        title: "Missing Information",
-        description: "Please enter a destination and travel style before generating an itinerary.",
-      });
-      return;
-    }
-    
+  const handleGenerateItinerary = async (video: Video, budget?: string) => {
     setIsItineraryLoading(true);
     setItineraryResponse(null);
     setHotelResponse(null);
     setEventsResponse(null);
     setMapData(null);
-    setWeatherResponse(null);
 
     const itineraryInput: GenerateItineraryInput = {
       videoId: video.id,
       videoTitle: video.title,
-      destination: videoSearchValues.destination,
-      travelType: videoSearchValues.travelType,
+      destination: lastSearchedDestination || "the destination in the video",
+      travelType: selectedTravelStyle || "Standard",
+      budget: budget,
     };
     
-    const bannerInput = {
-        videoTitle: video.title,
-        videoDescription: video.description,
-        destination: videoSearchValues.destination,
-    }
+    // Define banner input after itinerary result is available to use detectedDestination
 
     try {
       const itineraryResult = await generateItinerary(itineraryInput);
       
       const newItineraryData: ItineraryData = {
-        video: video,
+        video: {
+          id: video.id,
+          url: video.url,
+          title: itineraryResult.videoTitle || video.title,
+          thumbnail: itineraryResult.thumbnailUrl || video.thumbnail,
+          description: itineraryResult.videoDescription || video.description,
+        },
         itinerary: itineraryResult.itinerary,
         videoSummary: itineraryResult.videoSummary,
-        destination: videoSearchValues.destination,
+        destination: itineraryResult.detectedDestination || itineraryInput.destination,
         isBannerLoading: true,
-        isWeatherLoading: false,
-        weather: null,
       };
       setItineraryResponse(newItineraryData);
 
@@ -305,7 +654,7 @@ export default function Home() {
         if (mapLocationFound) break;
         for (const location of day.locations) {
           if (location.address && location.address !== "Address not available") {
-            handleMapLocationSelect(location);
+            handleMapLocationSelect(location as any);
             mapLocationFound = true;
             break;
           }
@@ -323,6 +672,11 @@ export default function Home() {
       setIsItineraryLoading(false);
 
       try {
+        const bannerInput = {
+            videoTitle: video.title,
+            videoDescription: video.description,
+            destination: itineraryResult.detectedDestination || "the destination in the video",
+        };
         const bannerResult = await generateItineraryBanner(bannerInput);
         setItineraryResponse(prev => prev ? ({ ...prev, bannerUrl: bannerResult.bannerUrl, isBannerLoading: false }) : null);
       } catch (bannerError) {
@@ -330,14 +684,14 @@ export default function Home() {
         setItineraryResponse(prev => prev ? ({ ...prev, bannerUrl: 'https://storage.cloud.google.com/jfk-files/mockbanner.png?authuser=3', bannerAiHint: 'tokyo tower', isBannerLoading: false }) : null);
       }
 
+      return { itineraryData: newItineraryData, lat: itineraryResult.latitude, lng: itineraryResult.longitude };
+
     } catch (error) {
       console.error(error);
       setIsItineraryLoading(false); 
 
       const mockItinerary = [
         { day: 1, title: 'Tsukiji Market & Ginza Sushi', locations: [
-            { name: 'American Museum of Natural History', description: 'One of the largest natural history museums in the world, famous for its dinosaur exhibits and the Milstein Hall of Ocean Life.', address: '200 Central Park West, New York, NY 10024', imageUrl: 'https://placehold.co/600x400.png' },
-            { name: 'Tony\'s Di Napoli', description: 'A classic family-style Italian restaurant in the heart of the Theater District, known for its huge portions and a lively atmosphere.', address: '147 W 43rd St, New York, NY 10036', imageUrl: 'https://placehold.co/600x400.png' },
             { name: 'Tsukiji Outer Market', description: 'Explore a bustling market with the freshest seafood and local street food.', address: '4 Chome-16-2 Tsukiji, Chuo City, Tokyo 104-0045, Japan', imageUrl: 'https://placehold.co/600x400.png' },
             { name: 'Sushi Dai', description: 'Experience one of the most famous sushi breakfasts in the world, right near the market.', address: '6 Chome-5-1 Toyosu, Koto City, Tokyo 135-0061, Japan', imageUrl: 'https://placehold.co/600x400.png' },
             { name: 'Ginza Kyubey', description: 'Indulge in a high-end, traditional Edomae sushi dinner in the upscale Ginza district.', address: '8 Chome-7-6 Ginza, Chuo City, Tokyo 104-0061, Japan', imageUrl: 'https://placehold.co/600x400.png' }
@@ -362,8 +716,6 @@ export default function Home() {
         isBannerLoading: false,
         bannerUrl: 'https://storage.cloud.google.com/jfk-files/mockbanner.png?authuser=3',
         bannerAiHint: 'tokyo tower',
-        isWeatherLoading: false,
-        weather: null,
       });
       
       toast({
@@ -391,8 +743,7 @@ export default function Home() {
           { name: 'Hoshinoya Tokyo', address: '1-9-1 Otemachi, Chiyoda-ku, Tokyo, 100-0004, Japan', imageUrl: 'https://placehold.co/600x400.png', description: 'A modern luxury ryokan experience in the heart of the city, complete with its own onsen.' },
           { name: 'The Peninsula Tokyo', address: '1-8-1 Yurakucho, Chiyoda-ku, Tokyo, 100-0006, Japan', imageUrl: 'https://placehold.co/600x400.png', description: 'Unparalleled luxury and service with a prime location overlooking the Imperial Palace gardens.' },
           { name: 'Mandarin Oriental, Tokyo', address: '2-1-1 Nihonbashi Muromachi, Chuo-ku, Tokyo, 103-8328, Japan', imageUrl: 'https://placehold.co/600x400.png', description: 'A five-star hotel known for its sophisticated style and award-winning restaurants.' },
-          { name: 'Trunk (Hotel) Yoyogi Park', address: '1-15-2 Tomigaya, Shibuya-ku, Tokyo, 151-0063, Japan', imageUrl: 'https://placehold.co/600x400.png', description: 'A trendy hotel with a focus on local culture, featuring a rooftop pool with views of Yoyogi Park.' },
-          { name: 'InterContinental New York Barclay by IHG', address: '111 E 48th St, New York, NY 10017', imageUrl: 'https://placehold.co/600x400.png', description: 'An iconic luxury hotel in Midtown East, known for its grand Federalist style and sophisticated elegance.' }
+          { name: 'Trunk (Hotel) Yoyogi Park', address: '1-15-2 Tomigaya, Shibuya-ku, Tokyo, 151-0063, Japan', imageUrl: 'https://placehold.co/600x400.png', description: 'A trendy hotel with a focus on local culture, featuring a rooftop pool with views of Yoyogi Park.' }
 
         ]
       };
@@ -462,11 +813,26 @@ export default function Home() {
   };
 
 
+  const handleAddLocationToItinerary = (dayIndex: number, location: any) => {
+    setItineraryResponse(prev => {
+      if (!prev) return null;
+      const updatedItinerary = JSON.parse(JSON.stringify(prev.itinerary));
+      if (updatedItinerary[dayIndex]) {
+        updatedItinerary[dayIndex].locations.push(location);
+      }
+      return { ...prev, itinerary: updatedItinerary };
+    });
+    toast({
+      title: "Added to Trip!",
+      description: `${location.name} has been added to Day ${dayIndex + 1}.`,
+    });
+  };
+
   const handleFindEvents = async (destination: string, videoSummary: string) => {
     setIsEventsLoading(true);
     setEventsResponse(null);
     try {
-      const result = await findTrendyEvents({ destination, videoSummary });
+      const result = await findTrendyEvents({ destination, videoSummary, travelStyle: selectedTravelStyle });
       setEventsResponse(result);
     } catch (error) {
       console.error("Failed to find events:", error);
@@ -533,32 +899,31 @@ export default function Home() {
   }
 
   const handleTabChange = (value: string) => {
+    if (value === "trip") {
+      router.push("/saved-trips");
+      return;
+    }
     setActiveTab(value);
     setGroundedResponse(null);
-    setVideoResponse(null);
     setItineraryResponse(null);
     setHotelResponse(null);
     setEventsResponse(null);
-    setWeatherResponse(null);
     setMapData(null);
     setIsLoading(false);
     setIsItineraryLoading(false);
     setIsHotelLoading(false);
     setIsEventsLoading(false);
-    setIsWeatherLoading(false);
     groundedSearchForm.reset();
     videoSearchForm.reset();
+    youtubeVideoSearchForm.reset();
+    setYoutubeVideoSearchResults(null);
   };
 
   return (
     <main className="flex min-h-screen flex-col items-center">
-      <div
-        className="w-full relative bg-cover bg-center"
-        style={{
-          backgroundImage: "url('https://storage.cloud.google.com/jfk-files/background.jpeg?authuser=1')",
-        }}
-      >
-        <div className="relative z-10 bg-black/50">
+      <div className="w-full relative bg-cover bg-center" style={{ backgroundImage: "url('https://firebasestorage.googleapis.com/v0/b/simplisite-407n5.firebasestorage.app/o/background2.jpeg?alt=media&token=eb7d43a2-7bf9-42fc-850a-d445e179687f')" }}>
+        <div className="absolute inset-0 bg-slate-900/50 z-0"></div>
+        <div className="relative z-10">
           <div className="w-full max-w-6xl mx-auto space-y-8 p-4 sm:p-8 md:p-12 lg:p-24">
             <header className="text-center">
               <h1 className="font-headline text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-white">
@@ -581,7 +946,7 @@ export default function Home() {
                 </TabsTrigger>
                 <TabsTrigger value="video">
                   <Youtube className="mr-2 h-4 w-4" />
-                  Video & Itinerary Search
+                  Video & Itinerary
                 </TabsTrigger>
                 <TabsTrigger value="trip">
                   <Plane className="mr-2 h-4 w-4" />
@@ -601,7 +966,7 @@ export default function Home() {
                         onSubmit={groundedSearchForm.handleSubmit(
                           onGroundedSearchSubmit
                         )}
-                        className="flex items-start gap-4"
+                        className="flex items-center gap-4"
                       >
                         <FormField
                           control={groundedSearchForm.control}
@@ -625,7 +990,7 @@ export default function Home() {
                           ) : (
                             <Sparkles className="mr-2 h-5 w-5" />
                           )}
-                          AI Mode
+                          Search
                         </Button>
                       </form>
                     </Form>
@@ -635,62 +1000,115 @@ export default function Home() {
               <TabsContent value="video">
                 <Card className="w-full shadow-lg bg-background/90 backdrop-blur-sm">
                   <CardContent className="p-6">
-                    <p className="text-center text-muted-foreground mb-4">
-                      Find inspiring travel videos, then generate a 3-day itinerary.
-                    </p>
-                    <Form {...videoSearchForm}>
-                      <form
-                        onSubmit={videoSearchForm.handleSubmit(onVideoSearchSubmit)}
-                        className="flex flex-col sm:flex-row items-start gap-4"
-                      >
-                        <FormField
-                          control={videoSearchForm.control}
-                          name="destination"
-                          render={({ field }) => (
-                            <FormItem className="flex-grow w-full">
-                              <FormControl>
-                                <Input
-                                  placeholder="Destination (e.g., 'Tokyo')"
-                                  {...field}
-                                  className="text-base"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={videoSearchForm.control}
-                          name="travelType"
-                          render={({ field }) => (
-                            <FormItem className="flex-grow w-full">
-                              <Select
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                              >
-                                <FormControl>
-                                  <SelectTrigger className="text-base">
-                                    <SelectValue placeholder="Select a travel style" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {travelStyles.map((style) => (
-                                    <SelectItem key={style} value={style}>
-                                      {style}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <Button type="submit" disabled={isLoading} size="lg" className="w-full sm:w-auto">
-                          <Youtube className="mr-2 h-5 w-5" />
-                          Search Videos
-                        </Button>
-                      </form>
-                    </Form>
+                    <Tabs defaultValue="search_yt" className="w-full">
+                      <TabsList className="grid w-full grid-cols-2 mb-4">
+                        <TabsTrigger value="search_yt">Search on YouTube</TabsTrigger>
+                        <TabsTrigger value="direct_link">Direct YouTube Link</TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="search_yt">
+                        <Form {...youtubeVideoSearchForm}>
+                          <form
+                            onSubmit={youtubeVideoSearchForm.handleSubmit(onYoutubeVideoSearchSubmit)}
+                            className="flex flex-col sm:flex-row items-center gap-4"
+                          >
+                            <FormField
+                              control={youtubeVideoSearchForm.control}
+                              name="destination"
+                              render={({ field }) => (
+                                <FormItem className="flex-grow w-full">
+                                  <FormControl>
+                                    <Input placeholder="Destination (e.g. Tokyo)" {...field} className="text-base" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={youtubeVideoSearchForm.control}
+                              name="travelStyle"
+                              render={({ field }) => (
+                                <FormItem className="flex-grow w-full">
+                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger className="text-base">
+                                        <SelectValue placeholder="Select Travel Style" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="Foodie">Foodie</SelectItem>
+                                      <SelectItem value="Family Friendly">Family Friendly</SelectItem>
+                                      <SelectItem value="Adventure Seeker">Adventure Seeker</SelectItem>
+                                      <SelectItem value="Luxury">Luxury</SelectItem>
+                                      <SelectItem value="Budget">Budget / Backpacker</SelectItem>
+                                      <SelectItem value="Cultural">Cultural & Historic</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={youtubeVideoSearchForm.control}
+                              name="budget"
+                              render={({ field }) => (
+                                <FormItem className="flex-grow w-full">
+                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                      <SelectTrigger className="text-base">
+                                        <SelectValue placeholder="Select Budget (Optional)" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="Budget">Budget</SelectItem>
+                                      <SelectItem value="Mid-range">Mid-range</SelectItem>
+                                      <SelectItem value="Luxury">Luxury</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                              <Button type="submit" disabled={isLoading} size="lg" className="w-full sm:w-auto">
+                                <Search className="mr-2 h-5 w-5" />
+                                Search
+                              </Button>
+                              <Button type="button" onClick={handleFeelingLuckySubmit} disabled={isLoading} size="lg" variant="secondary" className="w-full sm:w-auto">
+                                <Sparkles className="mr-2 h-5 w-5" />
+                                Feeling Lucky
+                              </Button>
+                            </div>
+                          </form>
+                        </Form>
+                      </TabsContent>
+
+                      <TabsContent value="direct_link">
+                        <Form {...videoSearchForm}>
+                          <form
+                            onSubmit={videoSearchForm.handleSubmit(onVideoSearchSubmit)}
+                            className="flex flex-col sm:flex-row items-center gap-4"
+                          >
+                            <FormField
+                              control={videoSearchForm.control}
+                              name="youtubeUrl"
+                              render={({ field }) => (
+                                <FormItem className="flex-grow w-full">
+                                  <FormControl>
+                                    <Input placeholder="YouTube Video URL" {...field} className="text-base" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <Button type="submit" disabled={isLoading} size="lg" className="w-full sm:w-auto">
+                              <Youtube className="mr-2 h-5 w-5" />
+                              Generate
+                            </Button>
+                          </form>
+                        </Form>
+                      </TabsContent>
+                    </Tabs>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -700,12 +1118,10 @@ export default function Home() {
                     <p className="text-muted-foreground mb-4">
                       Access additional tools to help with your trip planning and post-trip activities.
                     </p>
-                    <Link href="https://symbolgo-892801856301.us-central1.run.app/" target="_blank" rel="noopener noreferrer">
-                      <Button size="lg" asChild>
-                        <span>
-                            <Plane className="mr-2 h-5 w-5" />
-                            Launch Pre/Post Trip Tool
-                        </span>
+                    <Link href="/saved-trips">
+                      <Button size="lg">
+                          <Plane className="mr-2 h-5 w-5" />
+                          Launch Pre/Post Trip Tool
                       </Button>
                     </Link>
                   </CardContent>
@@ -717,12 +1133,29 @@ export default function Home() {
       </div>
 
       <div className="w-full max-w-6xl space-y-8 p-4 sm:p-8 md:p-12 lg:p-24 bg-background">
+        <div className="flex justify-end w-full items-center gap-2 -mb-6">
+          <Button 
+            onClick={handleSaveDraft}
+            disabled={!itineraryResponse}
+            variant="outline"
+            className="border-blue-600 text-blue-600 hover:bg-blue-50 rounded-full px-6 py-6 text-lg shadow-lg transition-transform hover:scale-105 flex items-center gap-2 font-bold"
+          >
+            <Heart className="h-5 w-5" fill="currentColor" /> Save Draft
+          </Button>
+          <Button 
+            onClick={handleBookNow}
+            disabled={!itineraryResponse}
+            className="bg-[#001C4C] hover:bg-[#002c6c] text-white font-bold rounded-full px-6 py-6 text-lg shadow-lg transition-transform hover:scale-105"
+          >
+            Book Now
+          </Button>
+        </div>
         <div className="w-full min-h-[20rem] space-y-8">
           {isLoading || isItineraryLoading ? (
             <LoadingState />
           ) : activeTab === "search" ? (
             groundedResponse ? (
-              <ResultsDisplay data={groundedResponse} />
+              <ResultsDisplay data={groundedResponse} query={groundedSearchForm.getValues().query} />
             ) : (
               <Card className="text-center p-12 border-dashed flex items-center justify-center h-full max-w-4xl mx-auto">
                 <h2 className="text-xl font-medium text-muted-foreground">
@@ -731,7 +1164,22 @@ export default function Home() {
               </Card>
             )
           ) : activeTab === "video" ? (
-            itineraryResponse ? (
+            youtubeVideoSearchResults ? (
+              <div className="space-y-8">
+                <VideoResultDisplay data={youtubeVideoSearchResults} onGenerateItinerary={handleGenerateItinerary} />
+                {itineraryResponse && (
+                  <ItineraryDisplay 
+                    data={itineraryResponse} 
+                    onFindHotels={handleFindHotels}
+                    isHotelLoading={isHotelLoading}
+                    onFindEvents={handleFindEvents}
+                    isEventsLoading={isEventsLoading}
+                    onSelectLocation={handleMapLocationSelect}
+                    onUpdateItinerary={(updated) => setItineraryResponse(prev => prev ? { ...prev, itinerary: updated } : null)}
+                  />
+                )}
+              </div>
+            ) : itineraryResponse ? (
               <ItineraryDisplay 
                 data={itineraryResponse} 
                 onFindHotels={handleFindHotels}
@@ -739,15 +1187,12 @@ export default function Home() {
                 onFindEvents={handleFindEvents}
                 isEventsLoading={isEventsLoading}
                 onSelectLocation={handleMapLocationSelect}
+                onUpdateItinerary={(updated) => setItineraryResponse(prev => prev ? { ...prev, itinerary: updated } : null)}
               />
-            ) : videoResponse ? (
-              <>
-                <VideoResultDisplay data={videoResponse} onGenerateItinerary={handleGenerateItinerary} />
-              </>
             ) : (
               <Card className="text-center p-12 border-dashed flex items-center justify-center h-full max-w-4xl mx-auto">
                 <h2 className="text-xl font-medium text-muted-foreground">
-                  Enter a destination and travel style to find videos.
+                  Search for videos or enter a direct link to get started.
                 </h2>
               </Card>
             )
@@ -765,20 +1210,15 @@ export default function Home() {
             <HotelDisplay data={hotelResponse} onSelectHotel={handleSelectHotel} />
           ) : null }
 
-          {isEventsLoading ? <LoadingState /> : eventsResponse ? <EventsDisplay data={eventsResponse} /> : null}
+          {isEventsLoading ? <LoadingState /> : eventsResponse ? <EventsDisplay data={eventsResponse} onAddLocationToItinerary={handleAddLocationToItinerary} /> : null}
 
-          {mapData && !isItineraryLoading && (
-            <div className="pt-8 space-y-8">
-              <MapDisplay data={mapData} itinerary={itineraryResponse?.itinerary} />
-              
-            </div>
-          )}
+
 
         </div>
-        
       </div>
     </main>
   );
+}
 
     
 
@@ -790,5 +1230,9 @@ export default function Home() {
 
 
 
+
+    
+
+    
 
     

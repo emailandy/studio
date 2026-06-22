@@ -3,13 +3,14 @@
 
 import React, { createContext, useContext } from 'react';
 import { useLiveAPI } from '@/hooks/use-live-api';
-import type { Part } from '@google/genai';
+import type { Part } from '@google/genai/web';
 import type { ItineraryData } from '@/app/page';
 
 type LiveAPIContextType = {
     connect: (data?: ItineraryData) => Promise<void>;
     disconnect: () => void;
     send: (parts: Part | Part[]) => void;
+    stream?: MediaStream | null;
 };
 
 const LiveAPIContext = createContext<LiveAPIContextType | null>(null);

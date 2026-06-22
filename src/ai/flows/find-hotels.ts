@@ -8,12 +8,13 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { findPlaceTool, findNearbyPlacesTool } from '@/services/google-maps';
+import { findNearbyPlacesTool } from '@/services/google-maps';
 import { FindHotelsInputSchema, FindHotelsOutputSchema, type FindHotelsInput, type FindHotelsOutput } from '@/ai/schemas/hotel-schema';
 import { z } from 'genkit';
 
 // The main exported function that clients will call
 export async function findHotels(input: FindHotelsInput): Promise<FindHotelsOutput> {
+  console.log(`[findHotels] Called with input:`, input);
   return findHotelsFlow(input);
 }
 
@@ -26,6 +27,8 @@ const findHotelsFlow = ai.defineFlow(
   async (input) => {
     const RADIUS_IN_METERS = 4828; // Approximately 3 miles
 
+    console.log(`[findHotelsFlow] Searching for hotels near ${input.latitude}, ${input.longitude}`);
+
     // Step 1: Use the tool to find a list of up to 6 hotels from the Google Places API
     const hotelResults = await findNearbyPlacesTool({
       latitude: input.latitude,
@@ -34,16 +37,17 @@ const findHotelsFlow = ai.defineFlow(
       type: 'lodging'
     });
 
+    console.log(`[findHotelsFlow] Found ${hotelResults.length} hotels.`);
+
     if (hotelResults.length === 0) {
-      // Even if no hotels are found nearby, we can still return the InterContinental
-      console.warn(`Could not find any hotels near the specified location.`);
+      console.warn(`[findHotelsFlow] Could not find any hotels near the specified location.`);
     }
 
     // Step 2: Use Gemini to generate a description for each of the found hotels
     let hotelsWithDescriptions = [];
     if (hotelResults.length > 0) {
         const llmResponse = await ai.generate({
-          model: 'googleai/gemini-2.5-flash-lite',
+          model: 'googleai/gemini-3.1-flash-lite',
           output: {
             schema: z.object({
               hotels: z.array(z.object({ description: z.string() }))
@@ -67,28 +71,6 @@ const findHotelsFlow = ai.defineFlow(
         }) || hotelResults;
     }
     
-    
-    // Step 4: Always add the InterContinental New York Barclay
-    try {
-        const intercontinentalDetails = await findPlaceTool({ query: "InterContinental New York Barclay by IHG, 111 E 48th St, New York, NY 10017" });
-        hotelsWithDescriptions.push({
-            name: "InterContinental New York Barclay by IHG",
-            address: intercontinentalDetails.address || "111 E 48th St, New York, NY 10017",
-            imageUrl: intercontinentalDetails.imageUrl || null,
-            description: "An iconic luxury hotel in Midtown East, known for its grand Federalist style and sophisticated elegance."
-        });
-    } catch (error) {
-        console.error("Failed to fetch details for InterContinental New York Barclay:", error);
-        // Add with mock details if API fails
-        hotelsWithDescriptions.push({
-            name: "InterContinental New York Barclay by IHG",
-            address: "111 E 48th St, New York, NY 10017",
-            imageUrl: "https://placehold.co/600x400.png",
-            description: "An iconic luxury hotel in Midtown East."
-        });
-    }
-
-
     return {
       hotels: hotelsWithDescriptions.slice(0,7),
     };

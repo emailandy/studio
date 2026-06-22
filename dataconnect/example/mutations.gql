@@ -1,0 +1,11 @@
+mutation CreateTrip($id: String!, $userId: String!, $name: String!, $itinerary: String!, $mapData: String!, $savedAt: String!, $videoId: String!) @auth(level: USER) {
+  trip_insert(data: { id: $id, userId: $userId, name: $name, itinerary: $itinerary, mapData: $mapData, savedAt: $savedAt, videoId: $videoId })
+}
+
+mutation UpdateTrip($id: String!, $name: String!) @auth(level: USER) {
+  trip_update(key: { id: $id }, data: { name: $name })
+}
+
+mutation DeleteTrip($id: String!) @auth(level: USER) {
+  trip_delete(key: { id: $id })
+}

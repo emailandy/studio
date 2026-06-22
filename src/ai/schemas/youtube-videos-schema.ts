@@ -7,6 +7,7 @@ import { z } from 'genkit';
 export const SearchYoutubeVideosInputSchema = z.object({
   destination: z.string().describe('The travel destination (e.g., "Tokyo").'),
   travelType: z.string().describe('The style of travel (e.g., "Foodie", "Adventure Seeker").'),
+  budget: z.string().optional().describe('Budget level (Budget, Mid-range, Luxury)'),
 });
 export type SearchYoutubeVideosInput = z.infer<typeof SearchYoutubeVideosInputSchema>;
 

@@ -9,5 +9,22 @@
     "frameworksBackend": {
       "region": "us-central1"
     }
+  },
+  "auth": {
+    "providers": {
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "TravelDiscovery",
+        "supportEmail": "admin@emailandy.altostrat.com"
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "dataconnect": {
+    "source": "dataconnect"
   }
 }

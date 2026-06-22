@@ -252,12 +252,36 @@ const findTrendyEventsFlow = ai.defineFlow(
     outputSchema: FindTrendyEventsOutputSchema,
   },
   async (input) => {
-    
-    if (input.destination.toLowerCase().includes('new york')) {
+    const today = new Date().toLocaleDateString('en-US');
+    const twoWeeksOut = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US');
+    const travelStyle = input.travelStyle || 'Standard';
+
+    try {
+        const llmResponse = await ai.generate({
+          model: 'googleai/gemini-3.1-flash-lite-preview',
+          output: {
+            schema: FindTrendyEventsOutputSchema,
+          },
+          prompt: `You are a travel assistant. Find real, upcoming local events in ${input.destination} happening between ${today} and ${twoWeeksOut}.
+            Focus on events that appeal to a "${travelStyle}" travel style.
+            
+            Use Google Search to find live, current information.
+            
+            For each event, provide its name, a concise description, its venue/location, date, time, and a real URL.
+            `,
+        });
+
+        if (!llmResponse.output) {
+            throw new Error('Failed to output valid event data.');
+        }
+
+        return llmResponse.output as FindTrendyEventsOutput;
+    } catch (error) {
+        console.error("Failed to fetch live events with search grounding:", error);
+        if (input.destination.toLowerCase().includes('tokyo')) {
+            return tokyoMockData;
+        }
         return newYorkMockData;
     }
-    
-    // Default to Tokyo mock data
-    return tokyoMockData;
   }
 );

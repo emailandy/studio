@@ -2,6 +2,7 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
+  serverExternalPackages: ['googleapis', 'google-auth-library'],
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -30,6 +31,12 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'places.googleapis.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'storage.cloud.google.com',
         port: '',
         pathname: '/**',
@@ -37,6 +44,12 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'storage.googleapis.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
         port: '',
         pathname: '/**',
       }

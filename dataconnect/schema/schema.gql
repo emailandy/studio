@@ -1,0 +1,9 @@
+type Trip @table(key: ["id"]) {
+  id: String!
+  userId: String!
+  name: String!
+  itinerary: String!
+  mapData: String!
+  savedAt: String!
+  videoId: String!
+}

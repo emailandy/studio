@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-const fields = ['routes.polyline.geoJsonLinestring'];
+const fields = ['routes.polyline.geoJsonLinestring', 'routes.legs.duration', 'routes.legs.distanceMeters'];
 
 export class RoutesApi {
   private readonly apiKey: string;
@@ -27,7 +27,8 @@ export class RoutesApi {
   async computeRoutes(
     from: google.maps.LatLngLiteral,
     to: google.maps.LatLngLiteral,
-    waypoints?: Array<google.maps.LatLngLiteral>
+    waypoints?: Array<google.maps.LatLngLiteral>,
+    travelMode?: 'DRIVE' | 'WALK'
   ) {
     const url = new URL(
       'https://routes.googleapis.com/directions/v2:computeRoutes'
@@ -37,6 +38,7 @@ export class RoutesApi {
       origin: {location: {latLng: {longitude: number; latitude: number}}};
       destination: {location: {latLng: {longitude: number; latitude: number}}};
       polylineEncoding: string;
+      travelMode?: string;
       intermediates?: Array<{
         location: {latLng: {longitude: number; latitude: number}};
       }>;
@@ -47,7 +49,8 @@ export class RoutesApi {
       destination: {
         location: {latLng: {longitude: to.lng, latitude: to.lat}}
       },
-      polylineEncoding: 'GEO_JSON_LINESTRING'
+      polylineEncoding: 'GEO_JSON_LINESTRING',
+      travelMode: travelMode === 'WALK' ? 'WALK' : 'DRIVE'
     };
 
     if (waypoints?.length) {

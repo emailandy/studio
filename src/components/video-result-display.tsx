@@ -31,6 +31,7 @@ export function VideoResultDisplay({ data, onGenerateItinerary }: VideoResultDis
                       src={video.thumbnail}
                       alt={video.title}
                       fill
+                      unoptimized
                       className="rounded-t-lg object-cover"
                     />
                   </div>

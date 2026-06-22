@@ -1,0 +1,5 @@
+specVersion: "v1alpha"
+connectorId: "my-connector"
+generate:
+  javascript:
+    outputDir: "../generated"

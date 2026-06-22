@@ -26,20 +26,27 @@ const generateItineraryBannerFlow = ai.defineFlow(
   async (input) => {
     const prompt = `A cinematic, photorealistic landscape banner for a travel video about "${input.videoTitle}". The image should be a beautiful, wide-angle shot of the main landmark or scenery of ${input.destination}. 8K, hyper-detailed, no people, no text.`;
 
-    const { media } = await ai.generate({
-      model: 'googleai/imagen-3.0-generate-002',
-      prompt: prompt,
-      config: {
-        responseModalities: ['TEXT', 'IMAGE'],
-      },
-    });
+    try {
+      const { media } = await ai.generate({
+        model: 'googleai/gemini-3.1-flash-image-preview',
+        prompt: prompt,
+        config: {
+          responseModalities: ['TEXT', 'IMAGE'],
+        },
+      });
 
-    if (!media.url) {
-      throw new Error('Failed to generate an itinerary banner.');
+      if (media.url) {
+        return {
+          bannerUrl: media.url,
+        };
+      }
+    } catch (error) {
+      console.error('Image generation failed, using fallback banner:', error);
     }
 
+    // Fallback to local static asset
     return {
-      bannerUrl: media.url,
+      bannerUrl: '/images/banner.jpeg',
     };
   }
 );

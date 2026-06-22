@@ -10,7 +10,8 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { findPlaceTool } from '@/services/google-maps';
+import { findPlaceTool, geocodeTool } from '@/services/google-maps';
+import { getVideoDetails } from '@/services/youtube';
 import { GenerateItineraryInputSchema, GenerateItineraryOutputSchema, type GenerateItineraryInput, type GenerateItineraryOutput } from '@/ai/schemas/itinerary-schema';
 
 export async function generateItinerary(
@@ -27,13 +28,15 @@ const generateItineraryFlow = ai.defineFlow(
   },
   async (input) => {
     const videoUrl = `https://www.youtube.com/watch?v=${input.videoId}`;
+    const videoDetails = await getVideoDetails(input.videoId);
+    const videoDescription = videoDetails?.description || '';
     let summaryOutput;
     let itineraryOutput;
 
     // Step 1: Summarize the YouTube video and extract places of interest.
     try {
         summaryOutput = (await ai.generate({
-            model: 'googleai/gemini-2.5-flash-lite',
+            model: 'googleai/gemini-3.1-flash-lite-preview',
             output: {
                 schema: z.object({
                     summary: z.string().describe('A concise summary of the YouTube video.'),
@@ -42,10 +45,13 @@ const generateItineraryFlow = ai.defineFlow(
             },
             prompt: [
                 {text: `Please summarize the following YouTube video titled "${input.videoTitle}".
-                Your summary should be concise and engaging.
-                Crucially, identify and list all specific places of interest (e.g., landmarks, restaurants, shops, attractions) that are mentioned or clearly visible in the video content.
-                `},
-                { media: { url: videoUrl, contentType: "video/mp4" } }
+                
+Description:
+"${videoDescription}"
+
+Your summary should be concise and engaging.
+Crucially, identify and list all specific places of interest (e.g., landmarks, restaurants, shops, attractions) that are mentioned in the video or its description.
+`},
             ],
         })).output;
 
@@ -62,7 +68,7 @@ const generateItineraryFlow = ai.defineFlow(
     // Step 2: Use the summary and extracted places to generate a 3-day itinerary.
     try {
         itineraryOutput = (await ai.generate({
-            model: 'googleai/gemini-2.5-flash-lite',
+            model: 'googleai/gemini-3.1-flash-lite-preview',
             output: {
                 schema: z.object({
                     itinerary: z.array(z.object({
@@ -71,26 +77,42 @@ const generateItineraryFlow = ai.defineFlow(
                         locations: z.array(z.object({
                           name: z.string().describe('The name of the location.'),
                           description: z.string().describe('A brief description of the location and why it is recommended.'),
+                          searchQuery: z.string().optional().describe('A precise search query to find this exact place reliably (e.g. "University of Georgia Arch, Athens, GA").'),
+                          placeId: z.string().optional().describe('The Google Places ID of the place if you know it natively.'),
                         })).describe('A list of locations to visit on this day.'),
-                      }))
+                      })),
+                    detectedDestination: z.string().optional().describe('The primary destination city/region shown in the video.'),
                 })
             },
             prompt: [
-                {text: `You are a travel expert tasked with creating a 3-day itinerary for a trip to ${input.destination}.
+                {text: `You are a travel expert tasked with creating a 3-day itinerary for a trip strictly to "${input.destination}".
 
 The user's travel style is "${input.travelType}".
+The user's budget level is "${input.budget || 'Mid-range'}". Bias your recommendations towards this budget level (e.g., cheaper vs luxury dining and attractions).
 
 Here is a summary of a relevant YouTube video titled "${input.videoTitle}":
 "${summary}"
 
 Places of interest explicitly identified from the video: ${placesOfInterest.join(', ')}.
 
+Exact Filtering Rule:
+- You must include ONLY places/landmarks/activities that are physically located within "${input.destination}".
+- **Rejection (Strict)**: Discard any places located in other cities or regions mentioned in the video (e.g., if the destination is "Athens Georgia", you MUST discard any locations listed in Atlanta or Helen Georgia).
+- **Search Context**: For every single location, ensure the 'searchQuery' you generate always explicitly appends the target city name (e.g. "University of Georgia Arch, Athens, GA" instead of just "The Arch"). This is vital for the Maps API to pull the correct photo!
+
+Examples of proper naming:
+❌ Bad: Name: "The Arch", Query: "The Arch, Athens, GA" (Finds wedding venues)
+✅ Good: Name: "University of Georgia Arch", Query: "University of Georgia Arch, Broad St, Athens, GA 30602"
+
+❌ Bad: Name: "The Varsity", Query: "The Varsity" (Finds locations in Atlanta when you are in Athens)
+✅ Good: Name: "The Varsity Athens", Query: "The Varsity, W Broad St, Athens, GA"
+
 Based on this summary and the identified places, suggest major landmarks, restaurants, and activities.
 Use ONLY the information derived from the video summary and the listed places of interest. Do NOT recommend anything that is not mentioned or clearly implied from the provided video summary.
 
-For each location, provide only its name and a short description. Do NOT include an address or image URL; that will be found later.
-
-Present the output as a 3-day plan. Each day should have a creative title and a list of locations.
+For each location, provide only its formal, specific name (e.g., 'University of Georgia Arch' instead of just 'The Arch'). Do NOT include an address or image URL; that will be found later. Ensure each location name refers to a single, distinct place. Do not combine multiple separate places into a single entry (e.g., do not use 'New College and Moore College' if they are distinct buildings).
+Present the output as a 3-day plan. Each day should have a creative title and a list of locations. 
+Also, identify the primary destination city/region shown in the video and set it as the 'detectedDestination' (e.g., "Athens, Georgia").
 `},
             ],
         })).output;
@@ -103,29 +125,21 @@ Present the output as a 3-day plan. Each day should have a creative title and a 
         throw new Error('Failed to generate an itinerary from the video content.');
     }
 
-    // Add the two mock locations to the beginning of Day 1
-    const mockLocations = [
-        {
-          name: 'American Museum of Natural History',
-          description: 'One of the largest natural history museums in the world, famous for its dinosaur exhibits and the Milstein Hall of Ocean Life.',
-        },
-        {
-          name: 'Tony\'s Di Napoli',
-          description: 'A classic family-style Italian restaurant in the heart of the Theater District, known for its huge portions and a lively atmosphere.',
-        },
-    ];
 
-    if (itineraryOutput.itinerary.length > 0) {
-        itineraryOutput.itinerary[0].locations.unshift(...mockLocations);
-    } else {
-        // If the AI somehow returns an empty itinerary, create Day 1 with the mock locations.
-        itineraryOutput.itinerary.push({
-            day: 1,
-            title: "Exploring New York's Classics",
-            locations: mockLocations
-        });
+
+
+    // Geocode destination to bias place searches
+    let destinationLat: number | undefined;
+    let destinationLng: number | undefined;
+    const targetDestination = itineraryOutput.detectedDestination || input.destination;
+    
+    try {
+        const geocodeResult = await geocodeTool({ address: targetDestination });
+        destinationLat = geocodeResult.latitude;
+        destinationLng = geocodeResult.longitude;
+    } catch (error) {
+        console.warn(`Could not geocode destination "${targetDestination}", proceeding without location bias.`);
     }
-
 
     // Step 3: For each location in the generated itinerary, use the Places API to find its address and a photo.
     const itineraryWithDetails = await Promise.all(
@@ -133,23 +147,16 @@ Present the output as a 3-day plan. Each day should have a creative title and a 
         const locationsWithDetails = await Promise.all(
           day.locations.map(async (location) => {
             try {
-              // Manually provide address for the mock locations to ensure accuracy
-              let query;
-              if (location.name === 'American Museum of Natural History') {
-                  query = 'American Museum of Natural History, 200 Central Park West, New York, NY 10024';
-              } else if (location.name === 'Tony\'s Di Napoli') {
-                  query = 'Tony\'s Di Napoli, 147 W 43rd St, New York, NY 10036';
-              } else {
-                  query = `${location.name}, ${input.destination}`;
-              }
+              const query = location.searchQuery || ((destinationLat && destinationLng) ? location.name : `${location.name}, ${targetDestination}`);
 
-              const place = await findPlaceTool({ query: query });
+              const place = await findPlaceTool({ query: query, lat: destinationLat, lng: destinationLng, placeId: location.placeId });
               return {
                 ...location,
                 address: place.address,
                 imageUrl: place.imageUrl,
                 rating: place.rating,
                 userRatingCount: place.userRatingCount,
+                placeId: place.placeId,
               };
             } catch (error) {
               console.warn(`Could not find details for "${location.name}", skipping. Error:`, error);
@@ -172,8 +179,15 @@ Present the output as a 3-day plan. Each day should have a creative title and a 
     );
 
     return {
+      videoId: input.videoId,
       itinerary: itineraryWithDetails,
       videoSummary: summary,
+      thumbnailUrl: videoDetails?.thumbnails?.high?.url || '',
+      videoTitle: videoDetails?.title || '',
+      videoDescription: videoDetails?.description || '',
+      detectedDestination: targetDestination,
+      latitude: destinationLat,
+      longitude: destinationLng,
     };
   }
 );

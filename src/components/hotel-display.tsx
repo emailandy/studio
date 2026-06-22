@@ -39,6 +39,7 @@ export function HotelDisplay({ data, onSelectHotel }: HotelDisplayProps) {
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   data-ai-hint="hotel exterior"
+                  unoptimized={true}
                 />
               ) : (
                 <div className="w-full h-full bg-muted flex items-center justify-center">

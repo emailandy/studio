@@ -1,0 +1,21 @@
+query ListTrips($userId: String!) @auth(level: USER) {
+  trips(where: { userId: { eq: $userId } }) {
+    id
+    name
+    itinerary
+    mapData
+    savedAt
+    videoId
+  }
+}
+
+query GetTrip($id: String!) @auth(level: USER) {
+  trip(key: { id: $id }) {
+    id
+    name
+    itinerary
+    mapData
+    savedAt
+    videoId
+  }
+}

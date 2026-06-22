@@ -1,0 +1,135 @@
+react-next25-demo-interstellar/app-starter-pack/debug-frontend/src/App.test.tsx(18,32): error TS2307: Cannot find module '@testing-library/react' or its corresponding type declarations.
+react-next25-demo-interstellar/app-starter-pack/debug-frontend/src/App.test.tsx(21,1): error TS2582: Cannot find name 'test'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+react-next25-demo-interstellar/app-starter-pack/debug-frontend/src/App.test.tsx(24,3): error TS2304: Cannot find name 'expect'.
+react-next25-demo-interstellar/app-starter-pack/debug-frontend/src/components/audio-pulse/AudioPulse.tsx(58,13): error TS2322: Type '(el: HTMLDivElement | null) => HTMLDivElement' is not assignable to type 'LegacyRef<HTMLDivElement> | undefined'.
+  Type '(el: HTMLDivElement | null) => HTMLDivElement' is not assignable to type '(instance: HTMLDivElement | null) => void | (() => VoidOrUndefinedOnly)'.
+    Type 'HTMLDivElement' is not assignable to type 'void | (() => VoidOrUndefinedOnly)'.
+react-next25-demo-interstellar/app-starter-pack/debug-frontend/src/components/side-panel/SidePanel.tsx(20,20): error TS2307: Cannot find module 'react-select' or its corresponding type declarations.
+react-next25-demo-interstellar/app-starter-pack/debug-frontend/src/components/side-panel/SidePanel.tsx(94,23): error TS7006: Parameter 'baseStyles' implicitly has an 'any' type.
+react-next25-demo-interstellar/app-starter-pack/debug-frontend/src/components/side-panel/SidePanel.tsx(102,22): error TS7006: Parameter 'styles' implicitly has an 'any' type.
+react-next25-demo-interstellar/app-starter-pack/debug-frontend/src/components/side-panel/SidePanel.tsx(102,32): error TS7031: Binding element 'isFocused' implicitly has an 'any' type.
+react-next25-demo-interstellar/app-starter-pack/debug-frontend/src/components/side-panel/SidePanel.tsx(102,43): error TS7031: Binding element 'isSelected' implicitly has an 'any' type.
+react-next25-demo-interstellar/app-starter-pack/debug-frontend/src/components/side-panel/SidePanel.tsx(113,22): error TS7006: Parameter 'e' implicitly has an 'any' type.
+react-next25-demo-interstellar/app-starter-pack/debug-frontend/src/reportWebVitals.ts(17,10): error TS2305: Module '"web-vitals"' has no exported member 'ReportHandler'.
+react-next25-demo-interstellar/app-starter-pack/debug-frontend/src/reportWebVitals.ts(21,34): error TS2339: Property 'getCLS' does not exist on type 'typeof import("/Users/emailandy/Documents/Code/Priceline/TravelDiscovery/node_modules/web-vitals/dist/modules/index")'.
+react-next25-demo-interstellar/app-starter-pack/debug-frontend/src/reportWebVitals.ts(21,42): error TS2339: Property 'getFID' does not exist on type 'typeof import("/Users/emailandy/Documents/Code/Priceline/TravelDiscovery/node_modules/web-vitals/dist/modules/index")'.
+react-next25-demo-interstellar/app-starter-pack/debug-frontend/src/reportWebVitals.ts(21,50): error TS2339: Property 'getFCP' does not exist on type 'typeof import("/Users/emailandy/Documents/Code/Priceline/TravelDiscovery/node_modules/web-vitals/dist/modules/index")'.
+react-next25-demo-interstellar/app-starter-pack/debug-frontend/src/reportWebVitals.ts(21,58): error TS2339: Property 'getLCP' does not exist on type 'typeof import("/Users/emailandy/Documents/Code/Priceline/TravelDiscovery/node_modules/web-vitals/dist/modules/index")'.
+react-next25-demo-interstellar/app-starter-pack/debug-frontend/src/reportWebVitals.ts(21,66): error TS2339: Property 'getTTFB' does not exist on type 'typeof import("/Users/emailandy/Documents/Code/Priceline/TravelDiscovery/node_modules/web-vitals/dist/modules/index")'.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/App.tsx(107,8): error TS2786: 'APIProvider' cannot be used as a JSX component.
+  Its type 'FunctionComponent<APIProviderProps>' is not a valid JSX element type.
+    Type 'FunctionComponent<APIProviderProps>' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactNode | Promise<ReactNode>' is not assignable to type 'ReactNode'.
+        Type 'ReactElement<unknown, string | JSXElementConstructor<any>>' is not assignable to type 'ReactNode'.
+          Property 'children' is missing in type 'ReactElement<unknown, string | JSXElementConstructor<any>>' but required in type 'ReactPortal'.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/App.tsx(110,10): error TS2786: 'LiveAPIProvider' cannot be used as a JSX component.
+  Its type 'FC<LiveAPIProviderProps>' is not a valid JSX element type.
+    Type 'FunctionComponent<LiveAPIProviderProps>' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactNode | Promise<ReactNode>' is not assignable to type 'ReactNode'.
+        Type 'ReactElement<unknown, string | JSXElementConstructor<any>>' is not assignable to type 'ReactNode'.
+          Property 'children' is missing in type 'ReactElement<unknown, string | JSXElementConstructor<any>>' but required in type 'ReactPortal'.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/App.tsx(131,31): error TS2786: 'PlaceDetails' cannot be used as a JSX component.
+  Its type 'FC<PlaceDetailsProps>' is not a valid JSX element type.
+    Type 'FunctionComponent<PlaceDetailsProps>' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactNode | Promise<ReactNode>' is not assignable to type 'ReactNode'.
+        Type 'ReactElement<unknown, string | JSXElementConstructor<any>>' is not assignable to type 'ReactNode'.
+          Property 'children' is missing in type 'ReactElement<unknown, string | JSXElementConstructor<any>>' but required in type 'ReactPortal'.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/App.tsx(134,12): error TS2786: 'FinalItineraryChipsPanel' cannot be used as a JSX component.
+  Its type 'FC<Props>' is not a valid JSX element type.
+    Type 'FunctionComponent<Props>' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'ReactNode | Promise<ReactNode>' is not assignable to type 'ReactNode'.
+        Type 'ReactElement<unknown, string | JSXElementConstructor<any>>' is not assignable to type 'ReactNode'.
+          Property 'children' is missing in type 'ReactElement<unknown, string | JSXElementConstructor<any>>' but required in type 'ReactPortal'.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/components/chat-response/chat-response-panel.tsx(29,10): error TS2786: 'Markdown' cannot be used as a JSX component.
+  Its type '(props: MarkdownProps) => FunctionComponentElement<{ children?: ReactNode; }>' is not a valid JSX element type.
+    Type '(props: MarkdownProps) => FunctionComponentElement<{ children?: ReactNode; }>' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'FunctionComponentElement<{ children?: ReactNode; }>' is not assignable to type 'ReactNode'.
+        Property 'children' is missing in type 'FunctionComponentElement<{ children?: ReactNode; }>' but required in type 'ReactPortal'.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/components/header/header.tsx(119,12): error TS2322: Type 'string | StaticImageData' is not assignable to type 'string | undefined'.
+  Type 'StaticImageData' is not assignable to type 'string'.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/components/logger/logger.tsx(78,8): error TS2786: 'MessageComponent' cannot be used as a JSX component.
+  Its type '({ message }: { message: string | LiveOutgoingMessage | LiveIncomingMessage; }) => ReactNode' is not a valid JSX element type.
+    Type '({ message }: { message: string | LiveOutgoingMessage | LiveIncomingMessage; }) => ReactNode' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'import("/Users/emailandy/Documents/Code/Priceline/TravelDiscovery/react-next25-demo-interstellar/app-starter-pack/frontend/node_modules/@types/react/index").ReactNode' is not assignable to type 'React.ReactNode'.
+        Type 'ReactElement<unknown, string | JSXElementConstructor<any>>' is not assignable to type 'ReactNode'.
+          Property 'children' is missing in type 'ReactElement<unknown, string | JSXElementConstructor<any>>' but required in type 'ReactPortal'.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/components/map-3d/map-3d.tsx(84,9): error TS2322: Type 'Ref<Map3DElement>' is not assignable to type 'LegacyRef<Map3DElement> | undefined'.
+  Type '(instance: Map3DElement | null) => void | (() => VoidOrUndefinedOnly)' is not assignable to type 'LegacyRef<Map3DElement> | undefined'.
+    Type '(instance: google.maps.maps3d.Map3DElement | null) => void | (() => VoidOrUndefinedOnly)' is not assignable to type '(instance: google.maps.maps3d.Map3DElement | null) => void | (() => VoidOrUndefinedOnly)'. Two different types with this name exist, but they are unrelated.
+      Type 'void | (() => VoidOrUndefinedOnly)' is not assignable to type 'void | (() => VoidOrUndefinedOnly)'. Two different types with this name exist, but they are unrelated.
+        Type '() => VoidOrUndefinedOnly' is not assignable to type 'void | (() => VoidOrUndefinedOnly)'.
+          Type '() => VoidOrUndefinedOnly' is not assignable to type '() => VoidOrUndefinedOnly'. Two different types with this name exist, but they are unrelated.
+            Type 'VoidOrUndefinedOnly' is not assignable to type 'VoidOrUndefinedOnly'. Two different types with this name exist, but they are unrelated.
+              Type '{ [UNDEFINED_VOID_ONLY]: never; }' is not assignable to type 'VoidOrUndefinedOnly'.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/components/map-handler/map-handler.tsx(125,71): error TS18048: 'latestItineraryItem' is possibly 'undefined'.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/components/map-handler/map-handler.tsx(733,8): error TS2786: 'Map3D' cannot be used as a JSX component.
+  Its type 'ForwardRefExoticComponent<Map3DElementOptions & { onCameraChange?: ((cameraProps: Map3DCameraProps) => void) | undefined; } & RefAttributes<Map3DElement | null>>' is not a valid JSX element type.
+    Type 'ForwardRefExoticComponent<Map3DElementOptions & { onCameraChange?: ((cameraProps: Map3DCameraProps) => void) | undefined; } & RefAttributes<Map3DElement | null>>' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'import("/Users/emailandy/Documents/Code/Priceline/TravelDiscovery/react-next25-demo-interstellar/app-starter-pack/frontend/node_modules/@types/react/index").ReactNode' is not assignable to type 'React.ReactNode'.
+        Type 'ReactElement<unknown, string | JSXElementConstructor<any>>' is not assignable to type 'ReactNode'.
+          Property 'children' is missing in type 'ReactElement<unknown, string | JSXElementConstructor<any>>' but required in type 'ReactPortal'.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/components/map-handler/use-map-elements.ts(97,9): error TS2322: Type 'StaticImageData' is not assignable to type 'string'.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/components/map-handler/use-map-elements.ts(154,9): error TS2322: Type 'StaticImageData' is not assignable to type 'string'.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/components/map-handler/use-map-elements.ts(186,9): error TS2322: Type 'StaticImageData' is not assignable to type 'string'.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/components/qr-code/qr-code.tsx(21,8): error TS2786: 'QRCodeSVG' cannot be used as a JSX component.
+  Its type 'ForwardRefExoticComponent<QRProps & SVGAttributes<SVGSVGElement> & RefAttributes<SVGSVGElement>>' is not a valid JSX element type.
+    Type 'ForwardRefExoticComponent<QRProps & SVGAttributes<SVGSVGElement> & RefAttributes<SVGSVGElement>>' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'import("/Users/emailandy/Documents/Code/Priceline/TravelDiscovery/react-next25-demo-interstellar/app-starter-pack/frontend/node_modules/@types/react/index").ReactNode' is not assignable to type 'React.ReactNode'.
+        Type 'ReactElement<unknown, string | JSXElementConstructor<any>>' is not assignable to type 'ReactNode'.
+          Property 'children' is missing in type 'ReactElement<unknown, string | JSXElementConstructor<any>>' but required in type 'ReactPortal'.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/contexts/LiveAPIContext.tsx(36,6): error TS2786: 'LiveAPIContext.Provider' cannot be used as a JSX component.
+  Its type 'Provider<UseLiveAPIResults | undefined>' is not a valid JSX element type.
+    Type 'ProviderExoticComponent<ProviderProps<UseLiveAPIResults | undefined>>' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'import("/Users/emailandy/Documents/Code/Priceline/TravelDiscovery/react-next25-demo-interstellar/app-starter-pack/frontend/node_modules/@types/react/index").ReactNode' is not assignable to type 'React.ReactNode'.
+        Type 'ReactElement<unknown, string | JSXElementConstructor<any>>' is not assignable to type 'ReactNode'.
+          Property 'children' is missing in type 'ReactElement<unknown, string | JSXElementConstructor<any>>' but required in type 'ReactPortal'.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/main.tsx(6,17): error TS5097: An import path can only end with a '.tsx' extension when 'allowImportingTsExtensions' is enabled.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/main.tsx(9,4): error TS2786: 'StrictMode' cannot be used as a JSX component.
+  Its type 'ExoticComponent<{ children?: ReactNode; }>' is not a valid JSX element type.
+    Type 'ExoticComponent<{ children?: ReactNode; }>' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'import("/Users/emailandy/Documents/Code/Priceline/TravelDiscovery/react-next25-demo-interstellar/app-starter-pack/frontend/node_modules/@types/react/index").ReactNode' is not assignable to type 'React.ReactNode'.
+        Type 'ReactElement<unknown, string | JSXElementConstructor<any>>' is not assignable to type 'ReactNode'.
+          Property 'children' is missing in type 'ReactElement<unknown, string | JSXElementConstructor<any>>' but required in type 'ReactPortal'.
+react-next25-demo-interstellar/app-starter-pack/frontend/src/main.tsx(10,6): error TS2786: 'NuqsAdapter' cannot be used as a JSX component.
+  Its type '({ children, fullPageNavigationOnShallowFalseUpdates }: { children: ReactNode; fullPageNavigationOnShallowFalseUpdates?: boolean | undefined; }) => FunctionComponentElement<ProviderProps<{ fullPageNavigationOnShallowFalseUpdates: boolean; }>>' is not a valid JSX element type.
+    Type '({ children, fullPageNavigationOnShallowFalseUpdates }: { children: ReactNode; fullPageNavigationOnShallowFalseUpdates?: boolean | undefined; }) => FunctionComponentElement<ProviderProps<{ fullPageNavigationOnShallowFalseUpdates: boolean; }>>' is not assignable to type '(props: any, deprecatedLegacyContext?: any) => ReactNode'.
+      Type 'FunctionComponentElement<ProviderProps<{ fullPageNavigationOnShallowFalseUpdates: boolean; }>>' is not assignable to type 'ReactNode'.
+        Property 'children' is missing in type 'FunctionComponentElement<ProviderProps<{ fullPageNavigationOnShallowFalseUpdates: boolean; }>>' but required in type 'ReactPortal'.
+react-next25-demo-interstellar/app-starter-pack/outro/app/i/[itineraryId]/not-found.tsx(1,56): error TS2307: Cannot find module '@/components/icons' or its corresponding type declarations.
+react-next25-demo-interstellar/app-starter-pack/outro/app/i/[itineraryId]/page.tsx(8,8): error TS2307: Cannot find module '@/components/icons' or its corresponding type declarations.
+react-next25-demo-interstellar/app-starter-pack/outro/app/i/[itineraryId]/page.tsx(11,30): error TS2307: Cannot find module '@/types/weather' or its corresponding type declarations.
+react-next25-demo-interstellar/app-starter-pack/outro/app/i/[itineraryId]/page.tsx(17,8): error TS2307: Cannot find module '@/components/place-card/place-card' or its corresponding type declarations.
+react-next25-demo-interstellar/app-starter-pack/outro/components/place-card/place-card.tsx(1,31): error TS2307: Cannot find module '@/components/icons' or its corresponding type declarations.
+src/ai/flows/find-hotels.ts(43,9): error TS7034: Variable 'hotelsWithDescriptions' implicitly has type 'any[]' in some locations where its type cannot be determined.
+src/ai/flows/find-hotels.ts(93,15): error TS7005: Variable 'hotelsWithDescriptions' implicitly has an 'any[]' type.
+src/ai/flows/generate-itinerary-banner.ts(37,10): error TS18047: 'media' is possibly 'null'.
+src/ai/flows/generate-itinerary-banner.ts(42,18): error TS18047: 'media' is possibly 'null'.
+src/app/live/route.ts(2,29): error TS2307: Cannot find module '@genkit-ai/next/live' or its corresponding type declarations.
+src/app/page.tsx(163,37): error TS2345: Argument of type '{ name: string; description: string; address?: string | undefined; imageUrl?: string | null | undefined; rating?: number | null | undefined; userRatingCount?: number | null | undefined; }' is not assignable to parameter of type '{ name: string; description: string; address: string; imageUrl: string | null; rating?: number | null | undefined; userRatingCount?: number | null | undefined; }'.
+  Types of property 'address' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/app/page.tsx(359,37): error TS2345: Argument of type '{ name: string; description: string; address?: string | undefined; imageUrl?: string | null | undefined; rating?: number | null | undefined; userRatingCount?: number | null | undefined; }' is not assignable to parameter of type '{ name: string; description: string; address: string; imageUrl: string | null; rating?: number | null | undefined; userRatingCount?: number | null | undefined; }'.
+  Types of property 'address' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/itinerary-display.tsx(102,22): error TS2345: Argument of type '{ name: string; description: string; rating?: number | null | undefined; userRatingCount?: number | null | undefined; address?: string | undefined; imageUrl?: string | null | undefined; }' is not assignable to parameter of type '{ name: string; address: string; description: string; imageUrl: string | null; rating?: number | null | undefined; userRatingCount?: number | null | undefined; }'.
+  Types of property 'address' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/itinerary-display.tsx(187,99): error TS2345: Argument of type '{ name: string; description: string; rating?: number | null | undefined; userRatingCount?: number | null | undefined; address?: string | undefined; imageUrl?: string | null | undefined; }' is not assignable to parameter of type '{ name: string; address: string; description: string; imageUrl: string | null; rating?: number | null | undefined; userRatingCount?: number | null | undefined; }'.
+  Types of property 'address' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/live-video-display.tsx(8,11): error TS2339: Property 'stream' does not exist on type 'LiveAPIContextType'.
+src/components/live-video-display.tsx(8,19): error TS2339: Property 'connected' does not exist on type 'LiveAPIContextType'.
+src/components/map-display.tsx(21,12): error TS2304: Cannot find name 'Map3DProps'.
+src/components/map-display.tsx(208,77): error TS7031: Binding element 'lng' implicitly has an 'any' type.
+src/components/map-display.tsx(208,82): error TS7031: Binding element 'lat' implicitly has an 'any' type.
+src/hooks/use-map-3d-camera-events.ts(23,15): error TS2303: Circular definition of import alias 'Map3DCameraProps'.
+src/hooks/utility-hooks.ts(63,7): error TS2322: Type 'Timeout' is not assignable to type 'number'.
+src/lib/multimodal-live-client.ts(258,39): error TS2741: Property 'role' is missing in type '{ parts: Part[]; }' but required in type 'Content'.
+src/lib/multimodal-live-types.ts(61,1): error TS2304: Cannot find name 't'.
+src/lib/utils.ts(19,54): error TS2551: Property 'webkitAudioContext' does not exist on type 'Window & typeof globalThis'. Did you mean 'AudioContext'?
+src/services/google-maps.ts(172,11): error TS2322: Type '"lodging"' is not assignable to type 'PlaceType1 | undefined'.
+src/services/youtube.ts(25,52): error TS7006: Parameter 'item' implicitly has an 'any' type.

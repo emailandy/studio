@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "bcomtravel"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

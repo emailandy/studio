@@ -86,6 +86,8 @@ export class AudioStreamer {
 
    if (!this.isPlaying) {
      this.isPlaying = true;
+     this.onStart(); // Shifted to single start of loop
+     
      // Initialize scheduledTime only when we start playing
      this.scheduledTime = this.context.currentTime + this.initialBufferTime;
      this.scheduleNextBuffer();
@@ -151,7 +153,6 @@ export class AudioStreamer {
 
      const startTime = Math.max(this.scheduledTime, this.context.currentTime);
      this.source.start(startTime);
-     this.onStart();
 
      this.scheduledTime = startTime + audioBuffer.duration;
    }

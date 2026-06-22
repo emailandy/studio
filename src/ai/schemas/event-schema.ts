@@ -4,6 +4,7 @@ import { z } from 'genkit';
 export const FindTrendyEventsInputSchema = z.object({
   destination: z.string().describe('The city or location to search for events.'),
   videoSummary: z.string().optional().describe('An optional summary from a travel video to provide context.'),
+  travelStyle: z.string().optional().describe('The selected travel style (e.g., Foodie, Adventure).'),
 });
 
 // Schema for a single tour
