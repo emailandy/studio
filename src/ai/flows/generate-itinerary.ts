@@ -36,7 +36,7 @@ const generateItineraryFlow = ai.defineFlow(
     // Step 1: Summarize the YouTube video and extract places of interest.
     try {
         summaryOutput = (await ai.generate({
-            model: 'googleai/gemini-3.1-flash-lite-preview',
+            model: 'googleai/gemini-3.1-flash-lite',
             output: {
                 schema: z.object({
                     summary: z.string().describe('A concise summary of the YouTube video.'),
@@ -68,7 +68,7 @@ Crucially, identify and list all specific places of interest (e.g., landmarks, r
     // Step 2: Use the summary and extracted places to generate a 3-day itinerary.
     try {
         itineraryOutput = (await ai.generate({
-            model: 'googleai/gemini-3.1-flash-lite-preview',
+            model: 'googleai/gemini-3.1-flash-lite',
             output: {
                 schema: z.object({
                     itinerary: z.array(z.object({

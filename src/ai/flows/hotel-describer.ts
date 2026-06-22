@@ -56,7 +56,7 @@ ${input.query ? `- Personalize the response to focus on attributes matching the 
     let response;
     try {
       response = await ai.generate({
-        model: 'googleai/gemini-3.1-flash-lite-preview',
+        model: 'googleai/gemini-3.1-flash-lite',
         prompt: prompt,
         config: {
           tools: [{ google_search: {} }],
@@ -66,7 +66,7 @@ ${input.query ? `- Personalize the response to focus on attributes matching the 
         },
       });
     } catch (error) {
-      console.warn('Failed to generate hotel description with gemini-3.1-flash-lite-preview grounding, falling back to gemini-3.1-flash-lite with grounding', error);
+      console.warn('Failed to generate hotel description with gemini-3.1-flash-lite grounding, falling back to gemini-3.1-flash-lite with grounding', error);
       response = await ai.generate({
         model: 'googleai/gemini-3.1-flash-lite',
         prompt: prompt,

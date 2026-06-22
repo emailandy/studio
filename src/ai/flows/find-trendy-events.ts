@@ -258,7 +258,7 @@ const findTrendyEventsFlow = ai.defineFlow(
 
     try {
         const llmResponse = await ai.generate({
-          model: 'googleai/gemini-3.1-flash-lite-preview',
+          model: 'googleai/gemini-3.1-flash-lite',
           output: {
             schema: FindTrendyEventsOutputSchema,
           },
