@@ -28,7 +28,7 @@ const generateItineraryBannerFlow = ai.defineFlow(
 
     try {
       const { media } = await ai.generate({
-        model: 'googleai/gemini-3.1-flash-image',
+        model: 'vertexai/gemini-3.1-flash-image',
         prompt: prompt,
         config: {
           responseModalities: ['TEXT', 'IMAGE'],

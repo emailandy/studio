@@ -1,8 +1,8 @@
 
 import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
+import {vertexAI} from '@genkit-ai/vertexai';
 
 export const ai = genkit({
-  plugins: [googleAI()],
-  model: 'googleai/gemini-3.1-flash-live-preview',
+  plugins: [vertexAI({ project: 'bcomtravel', location: 'us-central1' })],
+  model: 'vertexai/gemini-3.1-flash-live-preview',
 });

@@ -63,7 +63,7 @@ const generateMapsGroundedResponseFlow = ai.defineFlow(
     
     // Step 1: Get the initial grounded response from Gemini using the Google Maps tool.
     const llmResponse = await ai.generate({
-      model: 'googleai/gemini-3.1-flash-lite',
+      model: 'vertexai/gemini-3.1-flash-lite',
       prompt: fullQuery,
       config: {
         tools: [{ google_maps: {} }],
@@ -77,7 +77,7 @@ const generateMapsGroundedResponseFlow = ai.defineFlow(
 
     // Step 2: Use another LLM call to parse the text into structured JSON.
     const parsedResponse = await ai.generate({
-      model: 'googleai/gemini-3.1-flash-lite',
+      model: 'vertexai/gemini-3.1-flash-lite',
       prompt: `Parse the following text and extract all the mentioned points of interest (like businesses, landmarks, restaurants, etc.). For each point of interest, provide its name and a brief description.
 
         Text to parse:

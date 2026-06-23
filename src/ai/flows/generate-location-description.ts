@@ -80,7 +80,7 @@ const generateLocationDescriptionFlow = ai.defineFlow(
 
     // Step 3: Call the LLM to generate the final description.
     const result = await ai.generate({
-      model: 'googleai/gemini-3.1-flash-lite',
+      model: 'vertexai/gemini-3.1-flash-lite',
       prompt: prompt,
       output: { schema: GenerateLocationDescriptionOutputSchema },
     });

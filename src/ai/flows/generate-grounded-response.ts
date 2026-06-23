@@ -48,7 +48,7 @@ const generateGroundedResponseFlow = ai.defineFlow(
     // Step 1: Get the initial grounded response from Gemini.
     // This provides a conversational answer based on Google Search.
     const llmResponse = await ai.generate({
-      model: 'googleai/gemini-3.1-flash-lite',
+      model: 'vertexai/gemini-3.1-flash-lite',
       prompt: input.query,
       config: {
         thinkingConfig: {
@@ -66,7 +66,7 @@ const generateGroundedResponseFlow = ai.defineFlow(
     // Step 2: Use another LLM call to parse the text into structured JSON.
     // This is more reliable than trying to parse unstructured text manually.
     const parsedResponse = await ai.generate({
-      model: 'googleai/gemini-3.1-flash-lite',
+      model: 'vertexai/gemini-3.1-flash-lite',
       config: {
         thinkingConfig: {
           thinkingLevel: 'LOW',

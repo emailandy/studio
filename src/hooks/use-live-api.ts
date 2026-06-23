@@ -9,6 +9,7 @@ import { useLiveStore } from '@/store/live-store';
 import { generateLocationDescription } from '@/ai/flows/generate-location-description';
 import { AudioRecorder } from '@/utils/audio-recorder';
 import { searchPlace, searchNearbyPlaces, geocodeAddress } from '@/utils/geocoding';
+import { getVertexToken } from '@/ai/auth';
 
 export function useLiveAPI() {
   const audioStreamerRef = useRef<AudioStreamer | null>(null);
@@ -90,9 +91,9 @@ export function useLiveAPI() {
 
     setText('');
 
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
-    if (!apiKey) {
-      setError("API key is not configured.");
+    const token = await getVertexToken();
+    if (!token) {
+      setError("Failed to get Vertex AI access token. Make sure you are authenticated with ADC.");
       return;
     }
 
@@ -171,10 +172,13 @@ Do NOT just say "Okay" or acknowledge textually. Respond naturally and drive the
         }
       }
       
-      const genAI = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
+      const genAI = new GoogleGenAI({ 
+        vertexai: { project: 'bcomtravel', location: 'us-central1' },
+        httpOptions: { headers: { Authorization: `Bearer ${token}` } }
+      });
 
       const newSession = await genAI.live.connect({
-        model: 'gemini-3.1-flash-live-preview',
+        model: 'vertexai/gemini-3.1-flash-live-preview',
         config: {
           systemInstruction: systemPromptContent,
           responseModalities: ["AUDIO" as any],

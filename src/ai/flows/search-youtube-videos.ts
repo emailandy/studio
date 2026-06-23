@@ -27,7 +27,7 @@ const searchYoutubeVideosFlow = ai.defineFlow(
   },
   async (input) => {
     const aiResponse = await ai.generate({
-      model: 'googleai/gemini-3.1-flash-lite',
+      model: 'vertexai/gemini-3.1-flash-lite',
       prompt: `You are a YouTube search expert. Translate the user's travel request into a highly specific single search query for YouTube to find exact local travel content.
       
       Exact Matching & Exclusion Rules:

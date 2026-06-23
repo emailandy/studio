@@ -47,7 +47,7 @@ const findHotelsFlow = ai.defineFlow(
     let hotelsWithDescriptions = [];
     if (hotelResults.length > 0) {
         const llmResponse = await ai.generate({
-          model: 'googleai/gemini-3.1-flash-lite',
+          model: 'vertexai/gemini-3.1-flash-lite',
           output: {
             schema: z.object({
               hotels: z.array(z.object({ description: z.string() }))
